@@ -1,0 +1,16 @@
+pkgname=whow
+pkgver=1.0
+pkgrel=1
+pkgdesc="A CLI to-do's and events manager"
+arch=(any)
+url="https://github.com/DaringCuteSeal/whow"
+license=('GPL')
+depends=(bash coreutils)
+source=("whow::https://github.com/DaringCuteSeal/whow/releases/download/$pkgver/$pkgname-$pkgver.tar.gz")
+noextract=()
+md5sums=('e85a8e296a2489b41b1d7e758b27a8bd')
+
+package() {
+	cd "$pkgname"
+	./install.sh "$pkgdir"
+}
