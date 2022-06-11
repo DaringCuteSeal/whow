@@ -14,14 +14,14 @@ Whow has similar concepts to [todo.txt](https://github.com/todotxt/todo.txt-cli)
 
 Clone this repository and move `whow` somewhere to your `PATH`:
 
-```
+```bash
 git clone https://github.com/DaringCuteSeal/whow.git
 mv whow ~/.local/bin
 ```
 
 Or get it directly:
 
-```
+```bash
 curl -o ~/.local/bin/whow https://raw.githubusercontent.com/DaringCuteSeal/whow/main/whow
 ```
 
@@ -78,7 +78,7 @@ todo <name> [due] [@category] [v]
 
 Examples:
 
-```
+```bash
 todo "Record some footage for motion tracking"
 todo "Finish writing Whow" @programming
 todo "Write an article about privacy" "07/26/2022^10:00 PM"
@@ -96,3 +96,11 @@ event <date> <name> [@category]
 ..with the date and name being required, and optionally a category name that starts with @.
 
 - The due date uses the date format defined on the configuration file—either or mm/dd/yyyy dd/mm/yyyy.
+
+Examples:
+
+```bash
+event "03/21/2022" "Go to Someone's party" @fun
+event "03/23/2022" "Visit some of my friends at Jakarta"
+event "03/25/2022" "Go buy a new pair of sneakers" 
+```
