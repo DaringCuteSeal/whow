@@ -1,0 +1,1059 @@
+#!/bin/bash
+
+# Version
+version='1.0'
+
+# Escape codes for styling
+style_bold='\e[1m'
+style_italic='\e[3m'
+style_reset='\e[0;0m'
+style_blink='\e[5m'
+style_invert='\e[7m'
+style_strike='\e[9m'
+style_dim='\e[2m'
+
+err(){
+	[[ "$2" == 1 ]] && string="\e[31;31m[!!] err: ${style_reset}$1" || string="$1"
+	echo -e "$string"
+	exit $2
+}
+
+warn(){
+	echo -e "${style_bold}[!] warn:${style_reset} $1"
+}
+
+info(){
+	echo -e "${style_bold}[i] info:${style_reset} $1"
+}
+
+try(){
+	type "$1" &>/dev/null
+}
+
+print_ver(){
+	echo "Whow version $version"
+}
+
+prog_name="${0##*/}"
+print_help(){
+	echo -e "$(print_ver)
+Usage: ${prog_name} [options] [command [args]]
+
+\`whow show\` will be the default command, if no arguments were given.
+
+Options:
+	-h   --help          Show this help
+	-V   --version       Print version
+	-c   --conf <file>   Specify a config file instead of ${style_italic}\$XDG_CONFIG_HOME${style_reset}/whow/rc${style_reset} or ${style_italic}\$HOME${style_reset}/.config/whow${style_reset}/rc
+
+Commands:
+	edit <rc|todos|events>              Edit file with ${style_italic}\$EDITOR${style_reset} or vi
+	show [todos|events|important]       Show to-do's and/or events
+
+	todo <subcommand>
+		add <name> [due|@categ]     Add a todo
+		del <index|all>             Delete a todo by its index
+		mark <index>                Mark done/undone a todo by its index
+	
+	event <subcommand>
+		add <date> <name> [@categ]  Add an event
+		del <index>                 Delete an event by its index
+"
+}
+
+
+INT_handle(){
+	echo
+	info "Interrupt signal received, quitting.."
+	exit 0
+}
+trap "INT_handle" "SIGINT"
+
+# Process some options that just prints stuff first to prevent unnecessary declaration ¯\_(^w^)_/¯
+case "$1" in
+	-h|--help)
+		print_help
+		exit 0
+		;;
+	-V|--version)
+		print_ver
+		exit 0
+		;;
+esac
+
+conf_error(){
+	echo -e "\e[31;31m[!!] Configuration error: \n${style_reset}$1${style_reset}"
+	exit 2
+}
+
+icon(){
+	[[ "$icons" == "yes" ]] && echo "$1 "
+}
+
+
+color(){
+	if [[ -n "$2" ]]
+	then
+		echo "\\e[38;5;$1m\\e[48;5;$2m"
+	else
+		echo "\\e[38;5;$1m"
+	fi
+}
+
+# Default values; subscript for the variable and the value for default value
+declare -A options=(
+	[time_format]="24"
+	[date_format]="%a, %b %d %Y"
+	[dateformat_cfg]="mm/dd/yyyy"
+	# There is no default categories; they will be added later
+	[icons]='yes'
+	[cache_dir]="${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"
+)
+
+# Colors
+colors_categ=("green" "blue" "yellow" "red" "orange" "white" "dgreen" "dblue" "lblue" "dred" "pink" "purple")
+declare -A colors=(
+	[green]='\e[38;5;0m\e[48;5;34m'
+	[green_fg]='\e[38;5;34m'
+	[blue]='\e[38;5;234m\e[48;5;27m'
+	[blue_fg]='\e[38;5;27m'
+	[yellow]='\e[38;5;0m\e[48;5;178m'
+	[yellow_fg]='\e[38;5;178m'
+	[red]='\e[38;5;7m\e[48;5;124m'
+	[red_fg]='\e[38;5;124m'
+	[orange]='\e[38;5;0m\e[48;5;208m'
+	[orange_fg]='\e[38;5;208m'
+	[white]='\e[38;5;16m\e[48;5;255m'
+	[white_fg]='\e[38;5;255m'
+	[dgreen]='\e[38;5;255m\e[48;5;22m'
+	[dgreen_fg]='\e[38;5;22m'
+	[dblue]='\e[38;5;255m\e[48;5;17m'
+	[dblue_fg]='\e[38;5;17m'
+	[lblue]='\e[38;5;16m\e[48;5;81m'
+	[lblue_fg]='\e[38;5;81m'
+	[dred]='\e[38;5;255m\e[48;5;52m'
+	[dred_fg]='\e[38;5;52m'
+	[pink]='\e[38;5;16m\e[48;5;169m'
+	[pink_fg]='\e[38;5;169m'
+	[purple]='\e[38;5;255m\e[48;5;57m'
+	[purple_fg]='\e[38;5;57m'
+)
+
+
+## Commands for config file ##
+
+cachedir(){
+	if [[ -d "$1" ]]
+	then
+		cache_dir="$1"
+	else
+		conf_error "on option cachedir: invalid directory \"$1\" for cache!"
+	fi
+}
+
+icons(){
+	case "$1" in
+		yes)
+			icons=yes
+			;;
+		no)
+			icons=no
+			;;
+		*)
+			conf_error "on option icons: invalid option \"$1\""
+	esac
+}
+
+timeformat(){
+	case "$1" in
+		24)
+			time_format="%T"
+			;;
+		12)
+			time_format="%I:%M:%S %p"
+			;;
+		*)
+			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: unknown format \"$1\""
+			;;
+	esac
+
+}
+
+dateformat(){
+	if [[ -n "$1" ]]
+	then
+		date_format="$1"
+	else
+		conf_error "on option ${style_bold}$FUNCNAME${style_reset}: empty format"
+	fi
+}
+
+dateformat_cfg(){
+	case "$1" in
+		mm/dd/yyyy)
+			date_format_cfg[1]="$1"
+			date_format_cfg[2]="%m/%d/%Y"
+			;;
+		dd/mm/yyyy)
+			date_format_cfg[1]="$1"
+			date_format_cfg[2]="%d/%m/%Y"
+			;;
+		*)
+			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: unknown format \"$1\""
+			;;
+	esac
+}
+
+
+grepdate(){
+	grep $2 -wo -e '[0-9]*/[0-9]*/[0-9]*' <<< "$1"
+}
+
+convertdate(){
+	# Switch dd/mm/yyyy to mm/dd/yyyy
+	# This is too complex (and probably slow), find a better way for this
+	local orig="$(sed 's/\//_/g' <<< "$1")"
+	local grep_date="$(grepdate "$1" | sed 's/\//_/g' )"
+
+	local replacement="$(awk -F "_" '{printf "%d_%d_%d", $2, $1, $3}' <<< "$grep_date")"
+	sed 's/_/\//g' <(sed s/"$grep_date"/"$replacement"/g <<< "$orig")
+
+
+}
+
+
+# Sorry
+checkcolors(){
+	for j in "${colors_categ[@]}"
+	do
+		[[ "$1" == "$j" ]] && return 0
+	done
+	return 1
+}
+
+checkcategory(){
+	for j in "${categories[@]}"
+	do
+		[[ "$1" == "$j" ]] && return 0
+	done
+	return 1
+}
+
+category(){
+
+	[[ -n "$@" ]] && for i in "$@"
+	do
+		local category="${i%:*}"
+		categories+=("$category")
+
+		local color="${i#*:}"
+		if [[ -n "$color" ]] && [[ "$i" =~ ":" ]]
+		then
+			if checkcolors "$color"
+			then
+				categories_color+=(["$category"]="${colors[$color]}" ["${category}_fg"]="${colors[${color}_fg]}")
+			else
+				conf_error "on category: color \"$color\" isn't available"
+			fi
+
+		else
+			categories_color+=(["$category"]="$style_reset" ["${category}_fg"]="${style_reset}")
+		fi
+	done
+}
+
+format(){
+	for i in "$@"
+	do
+		sections+=("$i")
+	done
+}
+
+todo(){
+
+	[[ -z "$@" ]] && conf_error "on todo $((${todo_i}+1)) (line ${BASH_LINENO[0]}): empty todo"
+	
+	todos_lineno[$todo_i]="${BASH_LINENO[0]}"
+	todos[$todo_i]="$1"
+	shift
+
+	if [[ "$1" == "v" ]]
+	then
+		todos_done[$todo_i]=1
+		shift
+	fi
+
+        if [[ -z "$@" ]]
+	then
+		todos_category[$todo_i]="(none)"
+		todos_due[$todo_i]="(none)"
+		(( todo_i++ ))
+		return
+	fi
+
+	while [[ $# -gt 0 ]] 
+	do
+		local category="${1#@*}"
+		if [[ "${1:0:1}" == "@" ]]
+		then
+			if checkcategory "$category"
+			then
+				todos_category[$todo_i]="$category"
+				local temp_categ=1
+			else
+				conf_error "on todo #$(($todo_i+1)): nonexistent category \"${category}\""
+			fi
+		else
+			case "$1" in
+				v)
+					todos_done[$todo_i]=1
+					;;
+				*)
+					todos_due[$todo_i]="$1"
+					local temp_due=1
+					;;
+			esac
+		fi
+		shift
+	done
+
+	[[ "$temp_categ" == 1 ]] && [[ "$temp_due" != 1 ]] && todos_due[$todo_i]="(none)"
+	[[ "$temp_categ" != 1 ]] && [[ "$temp_due" == 1 ]] && todos_category[$todo_i]="(none)"
+
+	(( todo_i++ ))
+}
+
+custom(){
+	[[ $# -lt 2 ]] && conf_error "on custom section declaration: not enough arguments"
+	name="$1"
+	shift
+	custom_sections+=(["$name"]="$@")
+}
+
+event(){
+	[[ $# -lt 2 ]] && conf_error "on event $((${events_i}+1)) (line ${BASH_LINENO[0]}): empty event"
+	
+	events_lineno[$events_i]="${BASH_LINENO[0]}"
+	events_date[$events_i]="$1"
+	events[$events_i]="$2"
+
+        if [[ -z "$3" ]]
+	then
+		events_category[$events_i]="(none)"
+		(( events_i++ ))
+		return
+	fi
+
+	local category="${3#@*}"
+
+	if checkcategory "$category"
+	then
+		events_category[$events_i]="$category"
+		local temp_categ=1
+	else
+		conf_error "on events #$(($events_i+1)): nonexistent category \"${category}\""
+	fi
+
+	events_i=$(($events_i+1))
+}
+
+
+##############################
+
+## Sections for format ##
+section_separator(){
+	case "$1" in
+		0)
+			echo
+			;;
+		2)
+			echo "================================================================="
+			;;
+		3)
+			echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			;;
+		1|*)
+			echo "—————————————————————————————————————————————————————————————————"
+			;;
+
+	esac
+}
+
+
+section_date(){
+	local today="$(date +"$date_format")"
+	local time="$(date +"$time_format")"
+	echo -e " ${style_dim}Today is${style_reset} ${style_bold}`color 234 111` 📆 $today ${style_reset} `color 233 105` 🕒 ${style_bold}${time} ${style_reset}"
+
+}
+
+section_calendar(){
+	#echo -en "`color 147``cal -3`${style_reset}\n"
+	cal -3
+}
+
+
+ifoverdue(){
+	if [[ "${todos_due[$i]}" != "(none)" && ${due_print_today} != 1 && $(date -d "${todos_due[$i]/\^/ }" +%s) -lt $(date +%s) ]]
+	then
+		echo 1
+	fi
+}
+
+ifdone(){
+	[[ "${todos_done[$i]}" == 1 ]] && echo "$1" || echo "$2"
+}
+
+categ(){
+
+	if [[ "${todos_category[$i]}" == "important" ]]
+	then
+		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}`ifdone " "`"
+	elif [[ "${todos_category[$i]}" != '(none)' ]] && [[ "${categories_color["${todos_category[$i]}"]}" != "${style_reset}" ]]
+	then
+		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}`ifdone " "`"
+	elif [[ "${todos_category[$i]}" != '(none)' ]]
+	then
+		echo -e " \e[1;7m ${todos_category[i]} ${style_reset}`ifdone " "`"
+	else
+		:
+	fi
+}
+
+due(){
+	local due="${todos_due[$i]}"
+	
+	if [[ "${todos_done[$i]}" == 1 ]]
+	then
+		return
+	elif [[ "$due" != "(none)" ]]
+	then
+		if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]] && grepdate "$due" &>/dev/null
+		then
+			due="$(convertdate "$due")"
+		fi
+	
+		if [[ -n "${due%%^*}" ]]
+		then
+			due_print="$(date -d "${due%%^*}" +"${date_format}")"
+			if [[ "$due_print" == "$(date +"${date_format}")" ]]
+			then
+				due_print="today"
+				due_print_today=1
+			fi
+
+		else
+			due_print="today"
+			due_print_today=1
+		fi
+
+		if [[ "$due" =~ "^" ]] && ! grepdate <<< "${due#*^}"
+		then
+			due_print+=" \e[7;22mat${style_invert}${style_bold} $(date -d "${due#*^}" +"$time_format")"
+		fi
+			
+		if [[ $(ifoverdue) -eq 1 ]]
+		then
+			#echo " ${colors[red]} overdue (due ${due_print}) ${style_reset}"
+			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset} ${colors[red]} overdue ${style_reset}"
+		else
+			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset}"
+		fi
+	fi
+}
+
+section_todos(){
+	echo -e "\n `icon ✅`${style_bold}To-Do's${style_reset}\n"
+
+	[[ $todo_i -eq 0 ]] && echo -e " There aren't any to-do's.\n"
+
+	for (( i=0; i < $todo_i; i++ ))
+	do
+
+		if [[ "${todos_due[$i]}" == "(none)" ]]
+		then
+			index="#$(($i+1))"
+		elif [[ $(ifoverdue) -eq 1 ]]
+		then
+			index="${colors[red_fg]}#$(($i+1))${style_reset}"
+		else
+			index="#$(($i+1))"
+
+		fi
+
+		if [[ "${todos_category[$i]}" == "important" ]]
+		then
+			index="${colors[red_fg]}#$(($i+1))${style_reset}"
+		fi
+		
+		if [[ "${todos_done[$i]}" == 1 ]]
+		then
+			index="#$(($i+1))"
+		fi
+
+	
+       #         echo -e "  ${style_bold}#$(($i+1))${style_reset} `categ`\
+#`ifdone "${style_strike}"`$(fold -w 63 <<< "${todos[$i]}" | 's/^/ /g' -)`ifdone " "`${style_reset}`ifdone ' ✔'`"\
+#`due`
+		echo -e "  ${style_bold}${index}${style_reset} `categ`\
+ `ifdone "${style_strike}"`${todos[$i]}`ifdone " "`${style_reset}`ifdone ' ✔'`"\
+`due`
+		due_print_due=0
+	done
+
+	echo
+}
+
+
+events_print(){
+	if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+	then
+		date_print="Today"
+	else
+		date_print="$(date -d "${events_date[$i]}" +"$date_format")"
+	fi
+
+	if [[ "${events_category[$i]}" == "(none)" ]]
+	then
+		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${events[$i]}"
+	elif [[ "${events_category[$i]}" == "important" ]]
+	then
+		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${colors[red]} `icon 📅`$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
+	else
+		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
+	fi
+}
+
+events_today(){
+
+	if [[ ${#events_today[@]} -gt 0 ]]
+	then
+		echo -e " ${style_bold}Today events:${style_reset}\n"
+		for (( j=0; j < ${#events_today[@]}; j++ ))
+		do
+			i=${events_today[$j]}
+			events_print
+		done
+		echo
+	else
+		echo -e " There are no events for today.\n"
+	fi
+}
+
+section_events(){
+
+	echo -e "\n `icon ⌚`${style_bold}Events${style_reset}\n"
+
+	[[ $events_i -eq 0 ]] && echo -e "There aren't any events.\n"
+
+	
+	for (( i=0; i < $events_i; i++ ))
+	do
+		if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+		then
+			events_today+=($i)
+		elif [[ "$(date -d "${events_date[$i]}" +"%s")" -lt "$(date +"%s")" ]]
+		then
+			events_past+=($i)
+		else
+			events_upcoming+=($i)
+		fi
+	done
+
+	events_today
+
+	if [[ ${#events_upcoming[@]} -gt 0 ]]
+	then
+		echo -e " ${style_bold}Upcoming Events:${style_reset}\n"
+		for (( j=0; j < ${#events_upcoming[@]}; j++ ))
+		do
+			i=${events_upcoming[$j]}
+			events_print
+		done
+		echo
+	fi
+
+	if [[ ${#events_past[@]} -gt 0 ]]
+	then
+		echo -e " ${style_bold}Past Events:${style_reset}\n"
+		for (( j=0; j < 3; j++ ))
+		do
+			i=${events_past[$j]}
+			events_print
+			if [[ $(($j+1)) -gt ${#even[@]} ]]
+			then
+				break
+			fi
+		done
+		echo
+	fi
+}
+
+section_important(){
+	echo -e "\n `icon ✅`${style_bold}Important To-Do's${style_reset}\n"
+
+	for (( i=0; i < ${#todos_category[@]}; i++ ))
+	do
+		if [[ "${todos_category[$i]}" == "important" ]]
+		then
+			if [[ $(ifoverdue) -eq 1 ]]
+			then
+				echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}`due`${style_reset}"
+			else
+				echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}"
+			fi
+			important_exists=1
+		elif [[ "$(ifoverdue)" -eq 1 && ${todos_done[$i]} != 1 ]]
+		then
+			echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}`due`${style_reset}"
+			important_exists=1
+		fi
+
+	done
+	printf "${style_reset}"
+
+	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n"
+}
+
+section_custom(){
+	eval "${custom_sections[$1]}"
+}
+
+#########################
+source_todos(){
+	[[ -e "$cache_dir/todos" ]] && source "$cache_dir/todos"
+}
+
+source_events(){
+	[[ -e "$cache_dir/events" ]] && source "$cache_dir/events"
+}
+#########################
+
+## Each operations will be declared here. ##
+
+show(){
+
+	# Declare custom sections
+	declare -A custom_sections
+
+	# Add a default category
+	categories=("important")
+	declare -A categories_color+=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
+	todo_i=0
+	events_i=0
+
+	for i in "${!options[@]}"
+	do
+		eval "$i=\"${options[$i]}\""
+	done
+
+	# Set the configuration file
+	if [[ -z "$config" ]]
+	then
+		if [[ -r "$XDG_CONFIG_HOME/.config/whow/rc" ]]
+		then
+			config="${XDG_CONFIG_HOME}/.config/whow/rc"
+		elif [[ -r "$HOME/.config/whow/rc" ]]
+		then
+			config="$HOME/.config/whow/rc"
+		else
+			warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
+		fi
+	fi
+
+	source "$config" &> /dev/null
+
+	declare -A todos_n
+
+	source_todos
+	source_events
+	
+	# Autodetect TTY, for Linux TTYs
+	if [[ "$TERM" == "linux" ]]
+	then
+		icons=no
+	fi
+	[[ -z "$sections" ]] && sections=("separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2")
+
+	case "$1" in
+		all)
+			for i in "${sections[@]}"
+			do
+				case "$i" in
+					separator:*)
+						section_separator ${i#*:}
+						;;
+					custom:*)
+						section_custom "${i#*:}"
+						;;
+					*)
+						"section_$i"
+						;;
+				esac
+			done
+
+			;;
+		todos)
+			section_todos
+			;;
+		events)
+			section_events
+			;;
+		important)
+			section_important
+			echo
+
+			echo -e "  ----------\n"
+			echo -e " `icon ⌚`${style_bold}Today Events${style_reset}\n"
+
+
+			for (( i=0; i < $events_i; i++ ))
+			do
+				if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+				then
+					events_print
+				fi
+			done
+
+			exit 0
+			;;
+
+	esac
+
+}
+
+
+checkdir(){
+	if [[ -n "$config" ]]
+	then
+		:
+	elif [[ -d "$XDG_CONFIG_HOME" ]]
+	then
+		config="$XDG_CONFIG_HOME/whow/rc"
+	elif [[ -d "$HOME" ]]
+	then
+		config="$HOME/.config/whow/rc"
+		:
+	else
+		err "Could not find a suitable directory for configuration file! Use the -c option to specify one instead." 1
+	fi
+}
+
+edit(){	
+
+	checkdir
+
+	case "$1" in
+		rc)
+			"${EDITOR:-vi}" "$config"
+			;;
+		todos)
+			source "$config"
+			"${EDITOR:-vi}" "${cachedir:-"${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"}/todos"
+			;;
+		events)
+			source "$config"
+			"${EDITOR:-vi}" "${cachedir:-"${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"}/events"
+			;;
+		*)
+			print_help
+			exit 1
+			;;
+	esac
+	exit 0
+}
+
+
+############################################
+
+# Now the commands and other options
+if [[ -z "$1" ]]
+then
+	show all
+fi
+
+while [[ $# -gt 0 ]]
+do
+	case "$1" in
+		-c|--conf)
+			config="$2"
+			shift 2
+			;;
+
+		show)
+			shift
+			if [[ -z "$1" ]]
+			then
+				init
+				show all
+				exit 0
+			fi
+
+			case "$1" in
+				todos)
+					show todos
+					;;
+				events)
+					show events
+					;;
+				important)
+					show important
+					;;
+				*)
+					print_help
+					;;
+			esac
+			exit 0
+			;;
+		edit)
+			edit "$2"
+			;;
+
+		todo)
+			categories=("important")
+			declare -A categories_color=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
+
+			checkdir
+			source "$config"
+			todos_file="${cache_dir:-${options[cache_dir]}}/todos"
+
+			shift
+			case "$1" in
+				add)
+					shift
+
+					if [[ "$#" -lt 1 ]]
+					then
+						err "Missing argument(s)" 1
+					fi
+
+
+					todo_args="\"$1\" "
+					name="$1"
+					shift
+
+					for i in "$@"
+					do
+						if [[ "${i:0:1}" == "@" ]]
+						then
+							 if ! checkcategory "${i#*@}"
+							 then
+								err "Nonexistent category \"${i#*@}\"" 1
+							 fi
+						elif [[ "$i" == "v" ]]
+						then
+							:
+						else
+							if [[ "$i" =~ "^" ]]
+							then
+								if [[ -z "${i%^*}" ]]
+								then
+									if ! date -d "${i#^*}" &> /dev/null
+									then
+										err "Invalid time \"${i%^*}\"" 1
+									fi
+								else
+									if ! date -d "${i/\^/ }" &> /dev/null
+									then
+										err "Invalid date \"${i/\^/ }\"" 1
+									fi
+								fi
+							elif ! date -d "$i" &>/dev/null
+							then
+								err "Invalid date \"$i\"" 1
+							else
+								i="$(date -d "$i" +"${date_format_cfg[2]}")"
+							fi
+						fi
+						todo_args+="\"$i\" "
+					done
+
+					echo "todo $todo_args" >> "$todos_file"
+					echo "Added '$name'."
+					exit 0
+					;;
+				del)
+					shift
+
+					if [[ -z "$1" ]]
+					then
+						err "No index supplied" 1
+					fi
+
+					if [[ "$1" == "all" ]]
+					then
+						printf "" > "${cache_dir:-${options[cache_dir]}}/todos"
+						echo "Deleted all to-do's."
+						exit 0
+					fi
+
+					source_todos
+					if [[ -z "${todos[$(($1-1))]}" ]]
+					then
+						err "$1 is not a valid todo index" 1
+					else
+						sed -i "${todos_lineno[$(($1-1))]}d" "${cache_dir:-${options[cache_dir]}}/todos"
+						echo "To-do $1 deleted."
+
+					fi
+					exit 0
+					;;
+				mark)
+					shift
+
+					if [[ -z "$1" ]]
+					then
+						err "No index supplied" 1
+					fi
+
+					source_todos
+
+					index="$1"
+
+					if [[ -z "${todos[$(($index-1))]}" || "$index" -lt 1 ]]
+					then
+						err "$index is not a valid todo index" 1
+					fi
+
+					shift
+
+					index=$(($index-1))
+
+					if [[ "${todos_done[$index]}" != 1 ]]
+					then
+
+						if [[ "${todos_due[$index]}" != '(none)' ]] 
+						then
+							write+=" \"${todos_due[$index]}\" "
+						fi
+
+						if [[ "${todos_category[$index]}" != '(none)' ]]
+						then
+							write+=" \"@${todos_category[$index]}\" "
+						fi
+						eval "sed -i ${todos_lineno[$index]}c'todo \"${todos[$index]}\" $write v' \"$todos_file\""
+
+						echo "To-do $(($index+1)) marked done."
+					else
+
+						if [[ "${todos_due[$index]}" != '(none)' ]] 
+						then
+							write+=" \"${todos_due[$index]}\" "
+						fi
+
+						if [[ "${todos_category[$index]}" != '(none)' ]]
+						then
+							write+=" \"@${todos_category[$index]}\" "
+						fi
+						eval "sed -i ${todos_lineno[$index]}c'todo \"${todos[$index]}\" $write' \"$todos_file\""
+
+						echo "To-do $(($index+1)) marked undone."
+
+
+					fi
+					exit 0	
+
+
+			esac
+			;;
+
+		event)
+			categories=("important")
+			declare -A categories_color=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
+
+			checkdir
+			source "$config"
+			events_file="${cache_dir:-${options[cache_dir]}}/events"
+
+			shift
+			case "$1" in
+				add)
+					shift
+
+					if [[ "$#" -lt 2 ]]
+					then
+						err "Missing argument(s)" 1
+					fi
+
+
+					name="$2"
+
+					if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]] 
+					then
+						date="$(convertdate "$1")"
+					else
+						date="$1"
+					fi
+
+
+					if ! date -d "$date" &> /dev/null
+					then
+						err "Invalid date \"$1\"" 1
+					fi
+
+					events_args+="\"$(date -d "$date" +"${date_format_cfg[2]}")\" "
+					events_args+="\"$name\" "
+
+					if [[ -n "$3" ]]
+					then
+						if ! checkcategory "${3#*@}"
+						then
+							err "Nonexistent category \"${3#*@}\"" 1
+						fi
+						events_args+="\"$3\" "
+					fi
+
+					echo "event $events_args" >> "$events_file"
+					echo "Added '$name'."
+					exit 0
+
+
+					;;
+				del)
+					shift
+
+					if [[ -z "$1" ]]
+					then
+						err "No index supplied" 1
+					fi
+
+					if [[ "$1" == "all" ]]
+					then
+						printf "" > "${cache_dir:-${options[cache_dir]}}/events"
+						echo "Deleted all events."
+						exit 0
+					fi
+
+					source_events
+					if [[ -z "${events[$(($1-1))]}" ]]
+					then
+						err "$1 is not a valid todo index" 1
+					else
+						sed -i "${events_lineno[$(($1-1))]}d" "${cache_dir:-${options[cache_dir]}}/events"
+						echo "Event $1 deleted."
+
+					fi
+					exit 0
+
+					;;
+				*)
+					print_help
+					;;
+			esac
+
+
+			;;
+
+			--)
+			shift
+			break
+			;;
+		-*)
+			err "Unknown option: $1" 1
+			;;
+		*)
+			print_help
+			exit 1
+			;;
+	esac
+done
