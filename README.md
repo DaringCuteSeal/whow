@@ -25,7 +25,7 @@ Or get it directly:
 curl -o ~/.local/bin/whow https://raw.githubusercontent.com/DaringCuteSeal/whow/main/whow
 ```
 
-If you're on Arch Linux, you can clone this repository, `cd` to it, and type `makepkg -si`. Or `curl` the PKGBUILD. Do it however you want :/
+If you're on Arch Linux, you can clone this repository, `cd` to `makepkg`, and type `makepkg -si`. Or `curl` the PKGBUILD. Do it however you want :/
 
 # Overview
 
