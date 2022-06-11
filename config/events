@@ -1,0 +1,10 @@
+# Events
+# Format: <date> <name> [@category]
+
+# The date is written with format defined on dateformat_cfg.
+
+event "03/21/2022" "Go to Someone's party" @fun
+event "03/23/2022" "Visit some of my friends at Jakarta"
+event "03/25/2022" "Go buy a new pair of sneakers" 
+event "03/26/2022" "Get some 20% off fruits" @important
+event "04/01/2022" "Visit every single Linux distributions' homepage" @fun

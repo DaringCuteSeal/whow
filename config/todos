@@ -1,0 +1,11 @@
+# To-do's
+# Format: todo <name> [due] [@category]
+
+# Separate the due date with the time with a caret (^)
+# Example: 07/23/2022 or "07/23/2022^07:00 AM"
+
+todo "Record some footage for motion tracking"
+todo "Finish writing Whow" @programming
+todo "Write an article about privacy" "07/26/2022^10:00 PM"
+todo "Finish making my wolf model" @art
+todo "Finish my ongoing animation" "07/30/2022" @asap
