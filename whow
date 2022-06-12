@@ -618,7 +618,7 @@ section_important(){
 		fi
 
 	done
-	printf "${style_reset}"
+	echo -e "${style_reset}"
 
 	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n"
 }
@@ -709,7 +709,6 @@ show(){
 			;;
 		important)
 			section_important
-			echo
 
 			echo -e "  ----------\n"
 			echo -e " `icon ⌚`${style_bold}Today Events${style_reset}\n"
@@ -720,8 +719,14 @@ show(){
 				if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
 				then
 					events_print
+					today_exist=1
 				fi
 			done
+
+			if [[ today_exist -ne 1 ]]
+			then
+				echo " There aren't any events for today."
+			fi
 
 			exit 0
 			;;
