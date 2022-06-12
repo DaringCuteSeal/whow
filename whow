@@ -465,7 +465,11 @@ due(){
 section_todos(){
 	echo -e "\n `icon ✅`${style_bold}To-Do's${style_reset}\n"
 
-	[[ $todo_i -eq 0 ]] && echo -e " There aren't any to-do's.\n"
+	if [[ $todo_i -eq 0 ]]
+	then
+		echo -e " There aren't any to-do's.\n"
+		return 0
+	fi
 
 	for (( i=0; i < $todo_i; i++ ))
 	do
