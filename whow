@@ -544,7 +544,11 @@ section_events(){
 
 	echo -e "\n `icon ⌚`${style_bold}Events${style_reset}\n"
 
-	[[ $events_i -eq 0 ]] && echo -e "There aren't any events.\n"
+	if [[ $events_i -eq 0 ]]
+	then
+		echo -e " There aren't any events.\n"
+		return 0
+	fi
 
 	
 	for (( i=0; i < $events_i; i++ ))
