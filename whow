@@ -797,7 +797,6 @@ do
 			shift
 			if [[ -z "$1" ]]
 			then
-				init
 				show all
 				exit 0
 			fi
@@ -842,6 +841,12 @@ do
 
 
 					todo_args="\"$1\" "
+
+					if [[ -z "$1" ]]
+					then
+						err "To-do name cannot be empty" 1
+					fi
+
 					name="$1"
 					shift
 
@@ -989,6 +994,10 @@ do
 					fi
 
 
+					if [[ -z "$2" ]]
+					then
+						err "Event name cannot be empty" 1
+					fi
 					name="$2"
 
 					if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]] 
