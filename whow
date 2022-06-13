@@ -602,7 +602,7 @@ section_important(){
 
 	for (( i=0; i < ${#todos_category[@]}; i++ ))
 	do
-		if [[ "${todos_category[$i]}" == "important" ]]
+		if [[ "${todos_category[$i]}" == "important" && "${todos_done[$i]}" != 1 ]]
 		then
 			if [[ $(ifoverdue) -eq 1 ]]
 			then
@@ -618,9 +618,9 @@ section_important(){
 		fi
 
 	done
-	echo -e "${style_reset}"
+	printf "${style_reset}"
 
-	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n"
+	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n" || echo
 }
 
 section_custom(){
