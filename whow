@@ -3,6 +3,8 @@
 # Version
 version='1.0'
 
+export LANG=C
+
 # Escape codes for styling
 style_bold='\e[1m'
 style_italic='\e[3m'
@@ -408,13 +410,13 @@ categ(){
 
 	if [[ "${todos_category[$i]}" == "important" ]]
 	then
-		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}`ifdone " "`"
+		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}"
 	elif [[ "${todos_category[$i]}" != '(none)' ]] && [[ "${categories_color["${todos_category[$i]}"]}" != "${style_reset}" ]]
 	then
-		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}`ifdone " "`"
+		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}"
 	elif [[ "${todos_category[$i]}" != '(none)' ]]
 	then
-		echo -e " \e[1;7m ${todos_category[i]} ${style_reset}`ifdone " "`"
+		echo -e " \e[1;7m ${todos_category[i]} ${style_reset}"
 	else
 		:
 	fi
