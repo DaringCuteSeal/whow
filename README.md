@@ -104,3 +104,9 @@ event "03/21/2022" "Go to Someone's party" @fun
 event "03/23/2022" "Visit some of my friends at Jakarta"
 event "03/25/2022" "Go buy a new pair of sneakers" 
 ```
+
+# To-Do's (How Ironic)
+
+- [ ] Implement a new way to check for "today", because if user uses a date format that's not unique it's gonna be problematic.
+- [ ] Fix important section and the way of checking if a to-do is overdue.
+
