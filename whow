@@ -502,7 +502,7 @@ section_todos(){
 #`ifdone "${style_strike}"`$(fold -w 63 <<< "${todos[$i]}" | 's/^/ /g' -)`ifdone " "`${style_reset}`ifdone ' ✔'`"\
 #`due`
 		echo -e "  ${style_bold}${index}${style_reset} `categ`\
- `ifdone "${style_strike}"`${todos[$i]}`ifdone " "`${style_reset}`ifdone ' ✔'`"\
+ `ifdone "${style_strike}"`${todos[$i]}${style_reset}`ifdone ' ✔'`"\
 `due`
 		due_print_due=0
 	done
