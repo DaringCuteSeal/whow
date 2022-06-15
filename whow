@@ -394,7 +394,7 @@ section_calendar(){
 
 
 ifoverdue(){
-	if [[ "${todos_due[$i]}" != "(none)" && ${due_print_today} != 1 && $(date -d "${todos_due[$i]/\^/ }" +%s) -lt $(date +%s) ]]
+	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(date -d "${todos_due[$i]/\^/ }" +%s) -lt $(date +%s) ]]
 	then
 		echo 1
 	fi
@@ -532,7 +532,7 @@ events_today(){
 
 	if [[ ${#events_today[@]} -gt 0 ]]
 	then
-		echo -e " ${style_bold}Today events:${style_reset}\n"
+		echo -e " ${style_bold}Today's events:${style_reset}\n"
 		for (( j=0; j < ${#events_today[@]}; j++ ))
 		do
 			i=${events_today[$j]}
@@ -870,11 +870,13 @@ do
 									then
 										err "Invalid time \"${i%^*}\"" 1
 									fi
+									i="$(date +"${date_format_cfg[2]}")$i"
 								else
 									if ! date -d "${i/\^/ }" &> /dev/null
 									then
 										err "Invalid date \"${i/\^/ }\"" 1
 									fi
+									i="$(date -d "${i%^*}" +"${date_format_cfg[2]}")^${i#*^}"
 								fi
 							elif ! date -d "$i" &>/dev/null
 							then
