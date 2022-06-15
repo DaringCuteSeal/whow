@@ -737,7 +737,7 @@ show(){
 				fi
 			done
 
-			if [[ today_exist -ne 1 ]]
+			if [[ $today_exist -ne 1 ]]
 			then
 				echo " There aren't any events for today."
 			fi
