@@ -420,6 +420,15 @@ categ(){
 	fi
 }
 
+
+iftoday_td(){
+	if [[ "$(date -d "${todos_due[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
+	then
+		echo 1
+	fi
+}
+
+
 due(){
 	local due="${todos_due[$i]}"
 	
@@ -439,12 +448,10 @@ due(){
 			if [[ "$due_print" == "$(date +"${date_format}")" ]]
 			then
 				due_print="today"
-				due_print_today=1
 			fi
 
 		else
 			due_print="today"
-			due_print_today=1
 		fi
 
 		if [[ "$due" =~ "^" ]] && ! grepdate <<< "${due#*^}"
@@ -510,7 +517,7 @@ section_todos(){
 
 
 events_print(){
-	if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+	if [[ $(iftoday_ev) -eq 1 ]]
 	then
 		date_print="Today"
 	else
@@ -525,6 +532,13 @@ events_print(){
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${colors[red]} `icon 📅`$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
 	else
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
+	fi
+}
+
+iftoday_ev(){
+	if [[ "$(date -d "${events_date[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
+	then
+		echo 1
 	fi
 }
 
@@ -557,7 +571,7 @@ section_events(){
 	
 	for (( i=0; i < $events_i; i++ ))
 	do
-		if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+		if [[ $(iftoday_ev) -eq 1 ]]
 		then
 			events_today+=($i)
 		elif [[ "$(date -d "${events_date[$i]}" +"%s")" -lt "$(date +"%s")" ]]
@@ -716,7 +730,7 @@ show(){
 
 			for (( i=0; i < $events_i; i++ ))
 			do
-				if [[ "$(date -d "${events_date[$i]}" +"$date_format")" == "$(date +"$date_format")" ]]
+				if [[ $(iftoday_ev) -eq 1 ]]
 				then
 					events_print
 					today_exist=1
