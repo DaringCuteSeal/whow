@@ -3,7 +3,6 @@
 # Version
 version='1.0'
 
-set -v
 # Escape codes for styling
 style_bold='\e[1m'
 style_italic='\e[3m'
