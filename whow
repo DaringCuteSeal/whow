@@ -422,7 +422,7 @@ section_calendar(){
 
 
 ifoverdue(){
-	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]]
+	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]] && [[ $(iftoday_td) -ne 1 ]]
 	then
 		echo 1
 	fi
@@ -432,7 +432,7 @@ ifdone(){
 	[[ "${todos_done[$i]}" == 1 ]] && echo "$1" || echo "$2"
 }
 
-categ(){
+todos_categ(){
 
 	if [[ "${todos_category[$i]}" == "important" ]]
 	then
@@ -539,7 +539,7 @@ section_todos(){
        #         echo -e "  ${style_bold}#$(($i+1))${style_reset} `categ`\
 #`ifdone "${style_strike}"`$(fold -w 63 <<< "${todos[$i]}" | 's/^/ /g' -)`ifdone " "`${style_reset}`ifdone ' ✔'`"\
 #`due`
-		echo -e "  ${style_bold}${index}${style_reset} `categ`\
+		echo -e "  ${style_bold}${index}${style_reset} `todos_categ`\
  `ifdone "${style_strike}"`${todos[$i]}${style_reset}`ifdone ' ✔'`"\
 `due`
 		due_print_due=0
@@ -555,8 +555,8 @@ iftoday_ev(){
 	fi
 }
 
-iftmrw_td(){
-	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq 10000 ]]
+iftmrw_ev(){
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq 10000 ]]
 	then
 		echo 1
 	fi
@@ -566,7 +566,7 @@ events_print(){
 	if [[ $(iftoday_ev) -eq 1 ]]
 	then
 		date_print="Today"
-	elif [[ $(iftmrw_td) -eq 1 ]]
+	elif [[ $(iftmrw_ev) -eq 1 ]]
 	then
 		date_print="Tomorrow"
 	else
@@ -579,8 +579,12 @@ events_print(){
 	elif [[ "${events_category[$i]}" == "important" ]]
 	then
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${colors[red]} `icon 📅`$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
-	else
+	elif [[ "${events_category[$i]}" != '(none)' ]] && [[ "${categories_color["${events_category[$i]}"]}" != "${style_reset}" ]]
+	then
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
+	elif [[ "${events_category[$i]}" != '(none)' ]]
+	then
+		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${style_invert} ${events_category[$i]} ${style_reset} ${events[$i]}"
 	fi
 }
 
