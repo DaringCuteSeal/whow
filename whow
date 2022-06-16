@@ -317,7 +317,19 @@ todo(){
 					todos_done[$todo_i]=1
 					;;
 				*)
-					todos_due[$todo_i]="$1"
+
+					# Since the date command assumes that we use mm/dd/yyyy format,
+					# we have to convert our input date to that.
+					# For now, the conversion makes the script slow, so only
+					# do the conversion if the format is dd/mm/yyyy.
+
+					if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]]
+					then
+						todos_due[$todo_i]="$(convertdate "$1")"
+					else
+						todos_due[$todo_i]="$1"
+					fi
+
 					local temp_due=1
 					;;
 			esac
@@ -342,7 +354,15 @@ event(){
 	[[ $# -lt 2 ]] && conf_error "on event $((${events_i}+1)) (line ${BASH_LINENO[0]}): empty event"
 	
 	events_lineno[$events_i]="${BASH_LINENO[0]}"
-	events_date[$events_i]="$1"
+	
+	# Read the reason at to-do part of this date assignment
+	if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]]
+	then
+		events_date[$events_i]="$(convertdate "$1")"
+	else
+		events_date[$events_i]="$1"
+	fi
+
 	events[$events_i]="$2"
 
         if [[ -z "$3" ]]
@@ -451,10 +471,6 @@ due(){
 		return
 	elif [[ "$due" != "(none)" ]]
 	then
-		if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]] && grepdate "$due" &>/dev/null
-		then
-			due="$(convertdate "$due")"
-		fi
 	
 		if [[ -n "${due%%^*}" ]]
 		then
@@ -519,7 +535,6 @@ section_todos(){
 		then
 			index="#$(($i+1))"
 		fi
-
 	
        #         echo -e "  ${style_bold}#$(($i+1))${style_reset} `categ`\
 #`ifdone "${style_strike}"`$(fold -w 63 <<< "${todos[$i]}" | 's/^/ /g' -)`ifdone " "`${style_reset}`ifdone ' ✔'`"\
