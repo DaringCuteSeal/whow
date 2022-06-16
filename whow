@@ -462,13 +462,15 @@ due(){
 			if [[ $(iftoday_td) -eq 1 ]]
 			then
 				due_print="today"
-			elif [[ $(iftmrw_td) -eq 1 ]]
-			then
-				due_print="tomorrow"
 			fi
-
+			
 		else
 			due_print="today"
+		fi
+
+		if [[ $(iftmrw_td) -eq 1 ]]
+		then
+			due_print="tomorrow"
 		fi
 
 		if [[ "$due" =~ "^" ]] && ! grepdate <<< "${due#*^}"
@@ -478,7 +480,6 @@ due(){
 			
 		if [[ $(ifoverdue) -eq 1 ]]
 		then
-			#echo " ${colors[red]} overdue (due ${due_print}) ${style_reset}"
 			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset} ${colors[red]} overdue ${style_reset}"
 		else
 			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset}"
@@ -540,7 +541,7 @@ iftoday_ev(){
 }
 
 iftmrw_td(){
-	if [[ $(( $(_date -d "${events_date[$i]}" +"%j%Y") -  $(_date +"%j%Y") )) == 10000 ]]
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq 10000 ]]
 	then
 		echo 1
 	fi
@@ -948,7 +949,7 @@ do
 					fi
 
 					source_todos
-					if [[ -z "${todos[$(($1-1))]}" ]]
+					if [[ -z "${todos[$(($1-1))]}" ]] || [[ -z "${1//[a-z]}" ]]
 					then
 						err "$1 is not a valid todo index" 1
 					else
