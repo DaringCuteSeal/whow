@@ -437,7 +437,7 @@ iftoday_td(){
 }
 
 iftmrw_td(){
-	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") -  $(_date +"%j%Y") )) == 10000 ]]
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) == 10000 ]]
 	then
 		echo 1
 	fi
