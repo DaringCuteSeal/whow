@@ -1128,6 +1128,11 @@ do
 			shift
 			break
 			;;
+
+		-h|--help)
+			print_help
+			exit 0
+			;;
 		-*)
 			err "Unknown option: $1" 1
 			;;
