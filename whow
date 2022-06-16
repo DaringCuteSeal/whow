@@ -584,7 +584,7 @@ events_print(){
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
 	elif [[ "${events_category[$i]}" != '(none)' ]]
 	then
-		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${style_invert} ${events_category[$i]} ${style_reset} ${events[$i]}"
+		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${style_invert} ${style_bold}${events_category[$i]} ${style_reset} ${events[$i]}"
 	fi
 }
 
