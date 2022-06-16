@@ -13,7 +13,7 @@ style_strike='\e[9m'
 style_dim='\e[2m'
 
 # For debugging
-[[ "$WHOW_DEBUG" == 1 ]] && set -v
+[[ "$WHOW_DEBUG" == 1 ]] && set -x
 
 err(){
 	[[ "$2" == 1 ]] && string="\e[31;31m[!!] err: ${style_reset}$1" || string="$1"
