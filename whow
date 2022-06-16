@@ -12,6 +12,9 @@ style_invert='\e[7m'
 style_strike='\e[9m'
 style_dim='\e[2m'
 
+# For debugging
+[[ "$WHOW_DEBUG" == 1 ]] && set -v
+
 err(){
 	[[ "$2" == 1 ]] && string="\e[31;31m[!!] err: ${style_reset}$1" || string="$1"
 	echo -e "$string"
@@ -82,7 +85,7 @@ case "$1" in
 esac
 
 conf_error(){
-	echo -e "\e[31;31m[!!] Configuration error: \n${style_reset}$1${style_reset}"
+	echo -e "\e[31;31m[!!] Configuration error: \n${style_reset}$1${style_reset}" > /dev/stderr
 	exit 2
 }
 
@@ -147,7 +150,7 @@ cachedir(){
 	then
 		cache_dir="$1"
 	else
-		conf_error "on option cachedir: invalid directory \"$1\" for cache!"
+		conf_error "on option ${style_bold}$FUNCNAME${style_reset}: invalid directory \"$1\" for cache!"
 	fi
 }
 
@@ -160,7 +163,7 @@ icons(){
 			icons=no
 			;;
 		*)
-			conf_error "on option icons: invalid option \"$1\""
+			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: invalid option \"$1\""
 	esac
 }
 
@@ -219,6 +222,11 @@ convertdate(){
 	sed 's/_/\//g' <(sed s/"$grep_date"/"$replacement"/g <<< "$orig")
 
 
+}
+
+# Overrides the real date command
+_date(){
+	date "$@"
 }
 
 
@@ -381,8 +389,8 @@ section_separator(){
 
 
 section_date(){
-	local today="$(date +"$date_format")"
-	local time="$(date +"$time_format")"
+	local today="$(_date +"$date_format")"
+	local time="$(_date +"$time_format")"
 	echo -e " ${style_dim}Today is${style_reset} ${style_bold}`color 234 111` 📆 $today ${style_reset} `color 233 105` 🕒 ${style_bold}${time} ${style_reset}"
 
 }
@@ -394,7 +402,7 @@ section_calendar(){
 
 
 ifoverdue(){
-	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(date -d "${todos_due[$i]/\^/ }" +%s) -lt $(date +%s) ]]
+	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]]
 	then
 		echo 1
 	fi
@@ -422,14 +430,14 @@ categ(){
 
 
 iftoday_td(){
-	if [[ "$(date -d "${todos_due[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
+	if [[ "$(_date -d "${todos_due[$i]/\^/ }" +"%j%Y")" == "$(_date +"%j%Y")" ]]
 	then
 		echo 1
 	fi
 }
 
 iftmrw_td(){
-	if [[ $(( $(date -d "${todos_due[$i]}" +"%j%Y") -  $(date +"%j%Y") )) == 10000 ]]
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") -  $(_date +"%j%Y") )) == 10000 ]]
 	then
 		echo 1
 	fi
@@ -450,7 +458,7 @@ due(){
 	
 		if [[ -n "${due%%^*}" ]]
 		then
-			due_print="$(date -d "${due%%^*}" +"${date_format}")"
+			due_print="$(_date -d "${due%%^*}" +"${date_format}")"
 			if [[ $(iftoday_td) -eq 1 ]]
 			then
 				due_print="today"
@@ -465,7 +473,7 @@ due(){
 
 		if [[ "$due" =~ "^" ]] && ! grepdate <<< "${due#*^}"
 		then
-			due_print+=" \e[7;22mat${style_invert}${style_bold} $(date -d "${due#*^}" +"$time_format")"
+			due_print+=" \e[7;22mat${style_invert}${style_bold} $(_date -d "${due#*^}" +"$time_format")"
 		fi
 			
 		if [[ $(ifoverdue) -eq 1 ]]
@@ -525,14 +533,14 @@ section_todos(){
 }
 
 iftoday_ev(){
-	if [[ "$(date -d "${events_date[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
+	if [[ "$(_date -d "${events_date[$i]}" +"%j%Y")" == "$(_date +"%j%Y")" ]]
 	then
 		echo 1
 	fi
 }
 
 iftmrw_td(){
-	if [[ $(( $(date -d "${events_date[$i]}" +"%j%Y") -  $(date +"%j%Y") )) == 10000 ]]
+	if [[ $(( $(_date -d "${events_date[$i]}" +"%j%Y") -  $(_date +"%j%Y") )) == 10000 ]]
 	then
 		echo 1
 	fi
@@ -546,7 +554,7 @@ events_print(){
 	then
 		date_print="Tomorrow"
 	else
-		date_print="$(date -d "${events_date[$i]}" +"$date_format")"
+		date_print="$(_date -d "${events_date[$i]}" +"$date_format")"
 	fi
 
 	if [[ "${events_category[$i]}" == "(none)" ]]
@@ -592,7 +600,7 @@ section_events(){
 		if [[ $(iftoday_ev) -eq 1 ]]
 		then
 			events_today+=($i)
-		elif [[ "$(date -d "${events_date[$i]}" +"%s")" -lt "$(date +"%s")" ]]
+		elif [[ "$(_date -d "${events_date[$i]}" +"%s")" -lt "$(_date +"%s")" ]]
 		then
 			events_past+=($i)
 		else
@@ -701,7 +709,7 @@ show(){
 		fi
 	fi
 
-	source "$config" &> /dev/null
+	source "$config" >/dev/null
 
 	declare -A todos_n
 
@@ -898,23 +906,23 @@ do
 							then
 								if [[ -z "${i%^*}" ]]
 								then
-									if ! date -d "${i#^*}" &> /dev/null
+									if ! _date -d "${i#^*}" &> /dev/null
 									then
 										err "Invalid time \"${i%^*}\"" 1
 									fi
-									i="$(date +"${date_format_cfg[2]}")$i"
+									i="$(_date +"${date_format_cfg[2]}")$i"
 								else
-									if ! date -d "${i/\^/ }" &> /dev/null
+									if ! _date -d "${i/\^/ }" &> /dev/null
 									then
 										err "Invalid date \"${i/\^/ }\"" 1
 									fi
-									i="$(date -d "${i%^*}" +"${date_format_cfg[2]}")^${i#*^}"
+									i="$(_date -d "${i%^*}" +"${date_format_cfg[2]}")^${i#*^}"
 								fi
-							elif ! date -d "$i" &>/dev/null
+							elif ! _date -d "$i" &>/dev/null
 							then
 								err "Invalid date \"$i\"" 1
 							else
-								i="$(date -d "$i" +"${date_format_cfg[2]}")"
+								i="$(_date -d "$i" +"${date_format_cfg[2]}")"
 							fi
 						fi
 						todo_args+="\"$i\" "
@@ -1042,12 +1050,12 @@ do
 					fi
 
 
-					if ! date -d "$date" &> /dev/null
+					if ! _date -d "$date" &> /dev/null
 					then
 						err "Invalid date \"$1\"" 1
 					fi
 
-					events_args+="\"$(date -d "$date" +"${date_format_cfg[2]}")\" "
+					events_args+="\"$(_date -d "$date" +"${date_format_cfg[2]}")\" "
 					events_args+="\"$name\" "
 
 					if [[ -n "$3" ]]
