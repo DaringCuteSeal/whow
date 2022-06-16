@@ -463,6 +463,14 @@ iftmrw_td(){
 	fi
 }
 
+ifyest_td(){
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) == -10000 ]]
+	then
+		echo 1
+	fi
+}
+
+
 due(){
 	local due="${todos_due[$i]}"
 	
@@ -487,6 +495,9 @@ due(){
 		if [[ $(iftmrw_td) -eq 1 ]]
 		then
 			due_print="tomorrow"
+		elif [[ $(ifyest_td) -eq 1 ]]
+		then
+			due_print="yesterday"
 		fi
 
 		if [[ "$due" =~ "^" ]] && ! grepdate <<< "${due#*^}"
@@ -562,6 +573,13 @@ iftmrw_ev(){
 	fi
 }
 
+ifyest_ev(){
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq -10000 ]]
+	then
+		echo 1
+	fi
+}
+
 events_print(){
 	if [[ $(iftoday_ev) -eq 1 ]]
 	then
@@ -569,6 +587,9 @@ events_print(){
 	elif [[ $(iftmrw_ev) -eq 1 ]]
 	then
 		date_print="Tomorrow"
+	elif [[ $(ifyest_ev) -eq 1 ]]
+	then
+		date_print="Yesterday"
 	else
 		date_print="$(_date -d "${events_date[$i]}" +"$date_format")"
 	fi
