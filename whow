@@ -3,6 +3,7 @@
 # Version
 version='1.0'
 
+set -v
 # Escape codes for styling
 style_bold='\e[1m'
 style_italic='\e[3m'
@@ -428,6 +429,12 @@ iftoday_td(){
 	fi
 }
 
+iftmrw_td(){
+	if [[ $(( $(date -d "${todos_due[$i]}" +"%j%Y") -  $(date +"%j%Y") )) == 10000 ]]
+	then
+		echo 1
+	fi
+}
 
 due(){
 	local due="${todos_due[$i]}"
@@ -445,9 +452,12 @@ due(){
 		if [[ -n "${due%%^*}" ]]
 		then
 			due_print="$(date -d "${due%%^*}" +"${date_format}")"
-			if [[ "$due_print" == "$(date +"${date_format}")" ]]
+			if [[ $(iftoday_td) -eq 1 ]]
 			then
 				due_print="today"
+			elif [[ $(iftmrw_td) -eq 1 ]]
+			then
+				due_print="tomorrow"
 			fi
 
 		else
@@ -515,11 +525,27 @@ section_todos(){
 	echo
 }
 
+iftoday_ev(){
+	if [[ "$(date -d "${events_date[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
+	then
+		echo 1
+	fi
+}
+
+iftmrw_td(){
+	if [[ $(( $(date -d "${events_date[$i]}" +"%j%Y") -  $(date +"%j%Y") )) == 10000 ]]
+	then
+		echo 1
+	fi
+}
 
 events_print(){
 	if [[ $(iftoday_ev) -eq 1 ]]
 	then
 		date_print="Today"
+	elif [[ $(iftmrw_td) -eq 1 ]]
+	then
+		date_print="Tomorrow"
 	else
 		date_print="$(date -d "${events_date[$i]}" +"$date_format")"
 	fi
@@ -532,13 +558,6 @@ events_print(){
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${colors[red]} `icon 📅`$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
 	else
 		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
-	fi
-}
-
-iftoday_ev(){
-	if [[ "$(date -d "${events_date[$i]}" +"%j%Y")" == "$(date +"%j%Y")" ]]
-	then
-		echo 1
 	fi
 }
 
