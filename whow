@@ -662,6 +662,7 @@ section_events(){
 		echo
 	fi
 
+	echo "${events_past[@]}"
 	if [[ ${#events_past[@]} -gt 0 ]]
 	then
 		echo -e " ${style_bold}Past Events:${style_reset}\n"
@@ -669,10 +670,7 @@ section_events(){
 		do
 			i=${events_past[$j]}
 			events_print
-			if [[ $(($j+1)) -gt ${#even[@]} ]]
-			then
-				break
-			fi
+			[[ -z ${events_past[$(($j+1))]} ]] && break
 		done
 		echo
 	fi
