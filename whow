@@ -662,7 +662,6 @@ section_events(){
 		echo
 	fi
 
-	echo "${events_past[@]}"
 	if [[ ${#events_past[@]} -gt 0 ]]
 	then
 		echo -e " ${style_bold}Past Events:${style_reset}\n"
