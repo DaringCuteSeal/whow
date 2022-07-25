@@ -73,7 +73,7 @@ todo <name> [due] [@category] [v]
 
 ..with the name being required, and optionally a due date and a category name that starts with @. `v` marks the to-do as done.
 
-- The due date uses the date format defined on the configuration file—either or mm/dd/yyyy dd/mm/yyyy. It can optionally include time, and you can include it by separating the date and the time with a caret (`^`) (e.g `03/03/2022^1 PM`, `03/03/2022^1`, or `03/03/2022^05:30 PM`).
+- The due date uses the date format defined on the configuration file—either mm/dd/yyyy or dd/mm/yyyy. It can optionally include time, and you can include it by separating the date and the time with a caret (`^`) (e.g `03/03/2022^1 PM`, `03/03/2022^1`, or `03/03/2022^05:30 PM`).
 - You can only use category that has been defined on the configuration file.
 
 Examples:
@@ -95,7 +95,7 @@ event <date> <name> [@category]
 
 ..with the date and name being required, and optionally a category name that starts with @.
 
-- The due date uses the date format defined on the configuration file—either or mm/dd/yyyy dd/mm/yyyy.
+- The due date uses the date format defined on the configuration file—either mm/dd/yyyy or dd/mm/yyyy.
 
 Examples:
 
