@@ -891,6 +891,7 @@ do
 					;;
 				*)
 					print_help
+					exit 1
 					;;
 			esac
 			exit 0
@@ -1145,6 +1146,7 @@ do
 					;;
 				*)
 					print_help
+					exit 1
 					;;
 			esac
 
