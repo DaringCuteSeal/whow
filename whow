@@ -422,7 +422,7 @@ section_calendar(){
 
 
 ifoverdue(){
-	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]] && [[ $(iftoday_td) -ne 1 ]]
+	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]]
 	then
 		echo 1
 	fi
