@@ -424,6 +424,7 @@ section_calendar(){
 ifoverdue(){
 	if [[ "${todos_due[$i]}" != "(none)" ]] && [[ $(_date -d "${todos_due[$i]/\^/ }" +%s) -lt $(_date +%s) ]]
 	then
+		[[ ! "${todos_due[$i]}" =~ "^" ]] && return
 		echo 1
 	fi
 }
@@ -682,7 +683,7 @@ section_important(){
 	do
 		if [[ "${todos_category[$i]}" == "important" && "${todos_done[$i]}" != 1 ]]
 		then
-			if [[ $(ifoverdue) -eq 1 ]]
+			if [[ $(ifoverdue) -eq 1 ]] || [[ $(iftoday_td) -eq 1 ]]
 			then
 				echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}`due`${style_reset}"
 			else
