@@ -654,6 +654,20 @@ section_events(){
 
 	if [[ ${#events_upcoming[@]} -gt 0 ]]
 	then
+		echo -e " ${style_bold}Tomorrow's events:${style_reset}\n"
+		for (( j=0; j < ${#events_upcoming[@]}; j++ ))
+		do
+			i=$j
+			if [[ $(iftmrw_ev) -eq 1 ]]
+			then
+				events_print
+			fi
+		done
+		echo
+	fi
+
+	if [[ ${#events_upcoming[@]} -gt 0 ]]
+	then
 		echo -e " ${style_bold}Upcoming Events:${style_reset}\n"
 		for (( j=0; j < ${#events_upcoming[@]}; j++ ))
 		do
