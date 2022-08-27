@@ -648,21 +648,29 @@ section_events(){
 		else
 			events_upcoming+=($i)
 		fi
+
+		if [[ $(iftmrw_ev) -eq 1 ]]
+		then
+			tmrw=1
+		fi
+
 	done
 
 	events_today
 
-	if [[ ${#events_upcoming[@]} -gt 0 ]]
+	if [[ $tmrw -eq 1 ]]
 	then
 		echo -e " ${style_bold}Tomorrow's events:${style_reset}\n"
+
 		for (( j=0; j < ${#events_upcoming[@]}; j++ ))
 		do
-			i=$j
+			i=${events_upcoming[$i]}
 			if [[ $(iftmrw_ev) -eq 1 ]]
 			then
 				events_print
 			fi
 		done
+
 		echo
 	fi
 
