@@ -664,7 +664,7 @@ section_events(){
 
 		for (( j=0; j < ${#events_upcoming[@]}; j++ ))
 		do
-			i=${events_upcoming[$i]}
+			i=${events_upcoming[$j]}
 			if [[ $(iftmrw_ev) -eq 1 ]]
 			then
 				events_print
