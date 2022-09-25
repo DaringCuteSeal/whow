@@ -50,7 +50,7 @@ Options:
 	-c   --conf <file>   Specify a config file instead of ${style_italic}\$XDG_CONFIG_HOME${style_reset}/whow/rc${style_reset} or ${style_italic}\$HOME${style_reset}/.config/whow${style_reset}/rc
 
 Commands:
-	edit <rc|todos|events>              Edit file with ${style_italic}\$EDITOR${style_reset} or vi
+	edit <rc|todos|events|schedule>     Edit file with ${style_italic}\$EDITOR${style_reset} or vi
 	show [todos|events|important]       Show to-do's and/or events
 
 	todo <subcommand>
@@ -85,7 +85,7 @@ case "$1" in
 esac
 
 conf_error(){
-	echo -e "\e[31;31m[!!] Configuration error: \n${style_reset}$1${style_reset}" > /dev/stderr
+	echo -e "\e[31;31m[!!] Configuration error: \n${style_reset}$1${style_reset}" &> /dev/stderr
 	exit 2
 }
 
@@ -173,7 +173,7 @@ timeformat(){
 			time_format="%T"
 			;;
 		12)
-			time_format="%I:%M:%S %p"
+			time_format="%I:%M %p"
 			;;
 		*)
 			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: unknown format \"$1\""
@@ -309,7 +309,7 @@ todo(){
 				todos_category[$todo_i]="$category"
 				local temp_categ=1
 			else
-				conf_error "on todo #$(($todo_i+1)): nonexistent category \"${category}\""
+				conf_error "on todo #$(($todo_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
 			fi
 		else
 			case "$1" in
@@ -385,6 +385,45 @@ event(){
 	events_i=$(($events_i+1))
 }
 
+sched(){
+	[[ $# -lt 3 ]] && conf_error "On schedule $((${sched_i}+1)) (line ${BASH_LINENO[0]}): incorrect amount of arguments"
+
+	case "$1" in
+		# ev → every day
+		# wd → weekdays
+		# we → weekends
+
+		ev|wd|we)
+			sched_day[${sched_i}]="$1"
+			;;
+		sun|mon|tue|wed|thu|fri|sat)
+			sched_day[${sched_i}]="$1"
+			;;
+		*)
+			conf_error "Invalid day \"$1\""
+			;;
+	esac
+
+	sched_start[${sched_i}]="$2"
+	sched_end[${sched_i}]="$3"
+
+	sched[${sched_i}]="$4"
+
+	category="${5#@*}"
+	if [[ "${5:0:1}" == "@" ]]
+	then
+		if checkcategory "$category"
+		then
+			sched_categ[${sched_i}]="$category"
+		else
+			conf_error "on schedule #$(($sched_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
+		fi
+	else
+		sched_categ[${sched_i}]='(none)'
+	fi
+
+	sched_i=$(($sched_i+1))
+}
 
 ##############################
 
@@ -437,10 +476,10 @@ todos_categ(){
 
 	if [[ "${todos_category[$i]}" == "important" ]]
 	then
-		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}"
+		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}${style_reset}"
 	elif [[ "${todos_category[$i]}" != '(none)' ]] && [[ "${categories_color["${todos_category[$i]}"]}" != "${style_reset}" ]]
 	then
-		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}"
+		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}${style_reset}"
 	elif [[ "${todos_category[$i]}" != '(none)' ]]
 	then
 		echo -e " \e[1;7m ${todos_category[i]} ${style_reset}"
@@ -628,7 +667,7 @@ events_today(){
 
 section_events(){
 
-	echo -e "\n `icon ⌚`${style_bold}Events${style_reset}\n"
+	echo -e "\n `icon 🗓️`${style_bold}Events${style_reset}\n"
 
 	if [[ $events_i -eq 0 ]]
 	then
@@ -724,6 +763,90 @@ section_important(){
 	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n" || echo
 }
 
+
+sched_end_na(){
+	[[ "${sched_end[$i]}" == "%" ]] && return 0 || return 1
+}
+		
+sched_categ(){
+	if [[ "${sched_categ[$i]}" == "important" ]]
+	then
+		echo "${colors[red_fg]} ${colors[red]} ❗important ${style_reset}${colors[red_fg]}${style_reset}"
+	elif [[ "${sched_categ[$i]}" != '(none)' ]] && [[ "${categories_color["${sched_categ[$i]}"]}" != "${style_reset}" ]]
+	then
+		echo "${categories_color["${sched_categ[$i]}_fg"]} ${categories_color[${sched_categ[$i]}]} ${sched_categ[$i]} ${style_reset}${categories_color[${sched_categ[$i]}_fg]}${style_reset}"
+	elif [[ "${sched_categ[$i]}" != '(none)' ]]
+	then
+		echo "\e[1;7m ${sched_categ[$i]} ${style_reset}"
+	else
+		:
+	fi
+
+}
+
+sched_over(){
+	if sched_end_na
+	then
+		[[ $(_date -d "${sched_start[$i]}" '+%-H%M%S') -lt $(_date '+%-H%M%S') ]] && echo "${style_strike}"
+		return
+	fi
+	if [[ $(_date -d "${sched_end[$i]}" '+%-H%M%S') -lt $(_date '+%-H%M%S') ]]
+	then
+		echo "${style_strike}"
+	fi
+}
+
+
+sched_time(){
+	if [[ "${sched_end[$i]}" != "%" ]]
+	then
+		echo -en "\e[1;7m `_date -d "${sched_start[$i]}" "+${time_format}"` - `_date -d "${sched_end[$i]}" "+${time_format}"` "
+	else
+		echo -en "\e[1;7m `_date -d "${sched_start[$i]}" "+${time_format}"` "
+	fi
+}
+
+sched_ongoing(){
+	[[ "${sched_end[$i]}" == "%" ]] && return
+	if [[ $(_date '+%-H%M%S') -lt $(_date -d "${sched_end[$i]}" '+%-H%M%S') ]] && [[ $(_date '+%-H%M%S') -gt $(_date -d "${sched_start[$i]}" '+%-H%M%S') ]]
+	then
+		echo " ${style_invert} ongoing ${style_reset}"
+	fi
+}
+
+
+sched_print(){
+	echo -e "  ${style_bold}#$(($i+1))${style_reset} `sched_over``sched_time`${style_reset}`sched_categ` `sched_over`${sched[$i]}`sched_ongoing`${style_reset}"
+}
+
+section_schedule(){
+	local today="$(_date '+%a')"
+	local today="${today@L}"
+
+	echo -e "\n `icon ⌚`${style_bold}Schedule${style_reset}\n"
+	echo -e "   ${style_bold}`date "+%A"` \e[7m ${style_bold}`date "+${time_format}"` ${style_reset}\n"
+
+	for (( i=0; i < $sched_i; i++ ))
+	do
+		case "${sched_day[$i]}" in
+			ev)
+				sched_print
+				;;
+			we)
+		 		[[ "sun|sat" =~ "$today" ]] && sched_print
+				;;
+			wd)
+				[[ "mon|tue|wed|thu|fri" =~ "$today" ]] && sched_print
+				;;
+			mon|tue|wed|thu|fri|sat|sun)
+				[[ "${sched_day[$i]}" == "$today" ]] && sched_print
+				;;
+		esac
+
+	done
+
+}
+
 section_custom(){
 	eval "${custom_sections[$1]}"
 }
@@ -735,6 +858,10 @@ source_todos(){
 
 source_events(){
 	[[ -e "$cache_dir/events" ]] && source "$cache_dir/events"
+}
+
+source_schedule(){
+	[[ -e "$cache_dir/schedule" ]] && source "$cache_dir/schedule"
 }
 #########################
 
@@ -750,6 +877,7 @@ show(){
 	declare -A categories_color+=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
 	todo_i=0
 	events_i=0
+	sched_i=0
 
 	for i in "${!options[@]}"
 	do
@@ -770,13 +898,14 @@ show(){
 		fi
 	fi
 
-	source "$config" >/dev/null
+	source "$config" 1>/dev/null
 
 	declare -A todos_n
 
 	source_todos
 	source_events
-	
+	source_schedule
+		
 	# Autodetect TTY, for Linux TTYs
 	if [[ "$TERM" == "linux" ]]
 	then
@@ -808,11 +937,14 @@ show(){
 		events)
 			section_events
 			;;
+		schedule)
+			section_schedule
+			;;
 		important)
 			section_important
 
 			echo -e "  ----------\n"
-			echo -e " `icon ⌚`${style_bold}Today Events${style_reset}\n"
+			echo -e " `icon 🗓️`${style_bold}Today's Events${style_reset}\n"
 
 
 			for (( i=0; i < $events_i; i++ ))
@@ -855,19 +987,24 @@ checkdir(){
 
 edit(){	
 
+	
 	checkdir
 
 	case "$1" in
 		rc)
 			"${EDITOR:-vi}" "$config"
 			;;
-		todos)
+		todos|td)
 			source "$config"
 			"${EDITOR:-vi}" "${cachedir:-"${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"}/todos"
 			;;
-		events)
+		events|ev)
 			source "$config"
 			"${EDITOR:-vi}" "${cachedir:-"${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"}/events"
+			;;
+		schedule|sched)
+			source "$config"
+			"${EDITOR:-vi}" "${cachedir:-"${XDG_CONFIG_HOME:-"$HOME/.config/whow"}"}/schedule"
 			;;
 		*)
 			print_help
@@ -911,6 +1048,9 @@ do
 					;;
 				important)
 					show important
+					;;
+				schedule)
+					show schedule
 					;;
 				*)
 					print_help
