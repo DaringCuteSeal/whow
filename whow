@@ -597,6 +597,7 @@ section_todos(){
 	done
 
 	echo
+	return 0
 }
 
 iftoday_ev(){
@@ -735,6 +736,7 @@ section_events(){
 		done
 		echo
 	fi
+	return 0
 }
 
 section_important(){
@@ -844,11 +846,13 @@ section_schedule(){
 		esac
 
 	done
+	return 0
 
 }
 
 section_custom(){
 	eval "${custom_sections[$1]}"
+	return 0
 }
 
 #########################
@@ -937,7 +941,7 @@ show(){
 		events)
 			section_events
 			;;
-		schedule|sched)
+		schedule|sche)
 			section_schedule
 			;;
 		important)
