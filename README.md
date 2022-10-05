@@ -31,7 +31,7 @@ If you're on Arch Linux, you can clone this repository, `cd` to `makepkg`, and t
 
 `whow` exists as a command. Without any arguments passed, it will print out blocks of sections defined on the configuration file.
 
-To-do's and events files are stored in a cache directory, again, defined on the configuration file. It is named `todos` and `events`, respectively. The two files will be sourced by `whow` which can then display it in a more friendly way.
+To-do's and events files are stored in a cache directory, again, defined on the configuration file (`cache_dir` variable). It is named `todos` and `events`, respectively. The two files will be sourced by `whow` which can then display it in a more friendly way.
 
 
 
@@ -63,7 +63,7 @@ Add a new event by running `whow event add <date> <name> [@category]` and delete
 
 ## To-Do's
 
-You can add to-do's by calling the `todo` command. They should be placed on your `todos` file.
+You can add to-do's by calling the `todo` command. They should be placed on your `todos` file inside `cache_dir`.
 
 The syntax consists of the following:
 
@@ -86,7 +86,7 @@ todo "Write an article about privacy" "07/26/2022^10:00 PM"
 
 ## Events
 
-You can add events by calling the `event` command. They should be placed on your `events` file.
+You can add events by calling the `event` command. They should be placed on your `events` file inside `cache_dir`.
 
 The syntax consists of the following:
 ```
@@ -105,9 +105,36 @@ event "03/23/2022" "Visit some of my friends at Jakarta"
 event "03/25/2022" "Go buy a new pair of sneakers" 
 ```
 
+## Scheduling
+
+For now, there isn't a CLI frontend to add and remove schedules; you have to edit the `schedule` file inside `cache_dir` by yourself.
+
+The syntax consists of the following:
+```
+sched <day> <time start> <time end> <name> [@category]
+```
+
+- The day is written as sun/mon/tue/wed/thu/fri/sat or ev for every day, wd for weekday, and we for weekend
+- The time start being the time where your activity starts
+- The time end being the time where your activity ends (use `%` for no end time)
+- The category is optional and starts with @.
+
+Examples:
+
+```bash
+sched sun "08:00 AM" "09:00 AM" "Learn animation" @blender
+sched ev "09:10 AM" "10:00 AM" "Illustrate" @illustration
+sched we "01:00 PM" "03:00 PM" "Continue current project"
+```
+
+
 # To-Do's (How Ironic)
 
 - [x] Implement a new way to check for "today", because if user uses a date format that's not unique it's gonna be problematic.
 - [x] Fix important section and the way of checking if a to-do is overdue.
 - [x] Convert input to-do date to a proper format
 - [ ] Fix the absolutely slow dd/mm/yyyy support
+- [x] Work on scheduling support
+- [ ] Sort time on scheduling printing
+
+- [ ] Python rewrite 🌟
