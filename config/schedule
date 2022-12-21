@@ -1,0 +1,5 @@
+# Schedules
+# Format: sched <day> <start time> <end time (% for none)> <name> [@category]
+
+sched ev "06:00 AM" % "Wake up"
+sched we "06:00 PM" "08:00 PM" "Work on my code"
