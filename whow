@@ -1053,7 +1053,7 @@ do
 				important)
 					show important
 					;;
-				schedule)
+				schedule|sched)
 					show schedule
 					;;
 				*)
