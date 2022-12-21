@@ -85,6 +85,15 @@ EOF
 
 }
 
+write "schedule" << EOF
+sched ev "06:00 AM" "06:30 AM" "Schedule every day from 06:00 AM to 06:30 AM"
+sched wd "06:00 AM" "06:30 AM" "Schedule on weekdays from 06:00 AM to 06:30 AM"
+sched we "06:00 AM" "06:30 AM" "Schedule on weekends from 06:00 AM to 06:30 AM"
+sched ev "08:00 AM" % "Schedule without end time every day"
+sched mon "09:00 AM" "10:00 AM" "Schedule every Monday"
+sched tue "09:00 AM" "10:00 AM" "Schedule every Tuesday, with category" @test
+EOF
+
 if ! [[ "$1" == "nogen" ]]
 then
 	gen
@@ -196,3 +205,11 @@ _whow event del 2
 
 info "Showing to-do's"
 _whow show events
+
+
+#####
+
+info 'Check 5: schedule commands'
+
+info "Showing schedule"
+_whow show schedule
