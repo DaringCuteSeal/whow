@@ -133,7 +133,7 @@ sched we "01:00 PM" "03:00 PM" "Continue current project"
 - [x] Implement a new way to check for "today", because if user uses a date format that's not unique it's gonna be problematic.
 - [x] Fix important section and the way of checking if a to-do is overdue.
 - [x] Convert input to-do date to a proper format
-- [ ] Fix the absolutely slow dd/mm/yyyy support
+- [x] Fix the absolutely slow dd/mm/yyyy support
 - [x] Work on scheduling support
 - [ ] Sort time on scheduling printing
 
