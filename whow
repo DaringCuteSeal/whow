@@ -885,21 +885,13 @@ show(){
 		eval "$i=\"${options[$i]}\""
 	done
 
-	# Set the configuration file
-	if [[ -z "$config" ]]
-	then
-		if [[ -r "$XDG_CONFIG_HOME/.config/whow/rc" ]]
-		then
-			config="${XDG_CONFIG_HOME}/.config/whow/rc"
-		elif [[ -r "$HOME/.config/whow/rc" ]]
-		then
-			config="$HOME/.config/whow/rc"
-		else
-			warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
-		fi
+	# Check configuration file
+	if [[ -r "${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}" ]];then
+		config=${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}
+		source "$config" >/dev/null
+	else
+		warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
 	fi
-
-	source "$config" 1>/dev/null
 
 	declare -A todos_n
 
