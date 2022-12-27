@@ -16,7 +16,7 @@ Clone this repository and move `whow` somewhere to your `PATH`:
 
 ```bash
 git clone https://github.com/DaringCuteSeal/whow.git
-mv whow ~/.local/bin
+mv whow/whow ~/.local/bin
 ```
 
 Or get it directly:
