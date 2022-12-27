@@ -40,7 +40,7 @@ print_ver(){
 prog_name="${0##*/}"
 print_help(){
 	echo -e "$(print_ver)
-Usage: ${prog_name} [options] [command [args]]
+Usage: ${prog_name} [options] [command [args]
 
 \`whow show\` will be the default command, if no arguments were given.
 
