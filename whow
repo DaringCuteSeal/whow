@@ -825,6 +825,11 @@ section_schedule(){
 	echo -e "\n `icon ⌚`${style_bold}Schedule${style_reset}\n"
 	echo -e "   ${style_bold}`date "+%A"` \e[7m ${style_bold}`date "+${time_format}"` ${style_reset}\n"
 
+	if [[ -z "${sched[@]}" ]]
+	then
+		echo -e " No schedule configured.\n"
+		return 0
+	fi
 	for (( i=0; i < $sched_i; i++ ))
 	do
 		case "${sched_day[$i]}" in
