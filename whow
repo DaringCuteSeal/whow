@@ -105,7 +105,7 @@ color(){
 
 # Default values; subscript for the variable and the value for default value
 declare -A options=(
-	[time_format]="24"
+	[time_format]="%T"
 	[date_format]="%a, %b %d %Y"
 	[dateformat_cfg]="mm/dd/yyyy"
 	# There is no default categories; they will be added later
