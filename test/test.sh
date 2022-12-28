@@ -81,6 +81,7 @@ event "`_date "2 days"`" "An event in 2 days" @test
 event "`_date`" "An important event today" @important
 event "`_date "tomorrow"`" "An important event tomorrow" @important
 event "`_date "2 days"`" "An important event in 2 days" @important
+event "`_date "1 year ago"`" "An event a year ago"
 EOF
 
 }
