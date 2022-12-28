@@ -605,28 +605,16 @@ iftoday_ev(){
 }
 
 iftmrw_ev(){
-	event_year="$(date -d "${events_date[$i]/\^/ }" +"%Y")"
-	today_year="$(date +"%Y")"
-	if [[ $event_year -ne today_year ]]
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq 10000 ]]
 	then
-		echo 0
-	else
-		event_daycount="$(date -d "${events_date[$i]/\^/ }" +"%j")"
-		today_daycount="$(date +"%j")"
-		[[ $((${event_daycount#0} - ${today_daycount#0})) -eq 1 ]] && echo 1
+		echo 1
 	fi
 }
 
 ifyest_ev(){
-	event_year="$(date -d "${events_date[$i]/\^/ }" +"%Y")"
-	today_year="$(date +"%Y")"
-	if [[ $event_year -ne today_year ]]
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq -10000 ]]
 	then
-		echo 0
-	else
-		event_daycount="$(date -d "${events_date[$i]/\^/ }" +"%j")"
-		today_daycount="$(date +"%j")"
-		[[ $((${event_daycount#0} - ${today_daycount#0})) -eq -1 ]] && echo 1
+		echo 1
 	fi
 }
 
