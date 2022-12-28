@@ -905,7 +905,7 @@ show(){
 	then
 		icons=no
 	fi
-	[[ -z "$sections" ]] && sections=("separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2")
+	[[ -z "$sections" ]] && sections=("separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2" "schedule" "separator:2")
 
 	case "$1" in
 		all)
