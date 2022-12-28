@@ -598,21 +598,21 @@ section_todos(){
 }
 
 iftoday_ev(){
-	if [[ "$(_date -d "${events_date[$i]}" +"%j%Y")" == "$(_date +"%j%Y")" ]]
+	if [[ "$(_date -d "${events_date[$i]}" +"%-j%-Y")" == "$(_date +"%-j%-Y")" ]]
 	then
 		echo 1
 	fi
 }
 
 iftmrw_ev(){
-	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq 10000 ]]
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%-j%-Y") - $(_date +"%-j%-Y") )) -eq 10000 ]]
 	then
 		echo 1
 	fi
 }
 
 ifyest_ev(){
-	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) -eq -10000 ]]
+	if [[ $(( $(_date -d "${events_date[$i]/\^/ }" +"%-j%-Y") - $(_date +"%-j%-Y") )) -eq -10000 ]]
 	then
 		echo 1
 	fi
