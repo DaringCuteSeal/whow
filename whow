@@ -931,7 +931,7 @@ show(){
 		events)
 			section_events
 			;;
-		schedule|sche)
+		schedule|sched)
 			section_schedule
 			;;
 		important)
