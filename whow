@@ -72,7 +72,7 @@ INT_handle(){
 }
 trap "INT_handle" "SIGINT"
 
-# Process some options that just prints stuff first to prevent unnecessary declaration ¯\_(^w^)_/¯
+# Process some options that just prints stuff first to prevent unnecessary declarations ¯\_(^w^)_/¯
 case "$1" in
 	-h|--help)
 		print_help
@@ -317,8 +317,7 @@ todo(){
 
 					# Since the date command assumes that we use mm/dd/yyyy format,
 					# we have to convert our input date to that.
-					# For now, the conversion makes the script slow, so only
-					# do the conversion if the format is dd/mm/yyyy.
+					# Do the conversion if the format is dd/mm/yyyy.
 
 					if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]]
 					then
