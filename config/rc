@@ -32,7 +32,7 @@ dateformat_cfg "mm/dd/yyyy"
 # You can also assign colors to them (only works with 256 colors/true color capable terminal):
 category "art:blue" "programming:yellow" "asap:red" "fun:purple" "school:pink"
 # Available colors are (d is suffix for dark and l for light):
-# green, blue, yellow, red, orange, brown, dgreen, dblue, lblue, dred, pink, purple
+# green, blue, yellow, red, orange, brown, dgreen, dblue, lblue, dred, pink, purple, grey
 
 
 ## Formatting

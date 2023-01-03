@@ -114,7 +114,7 @@ declare -A options=(
 )
 
 # Colors
-colors_categ=("green" "blue" "yellow" "red" "orange" "white" "dgreen" "dblue" "lblue" "dred" "pink" "purple")
+colors_categ=("green" "blue" "yellow" "red" "orange" "white" "dgreen" "dblue" "lblue" "dred" "pink" "purple" "brown" "grey")
 declare -A colors=(
 	[green]='\e[38;5;0m\e[48;5;34m'
 	[green_fg]='\e[38;5;34m'
@@ -140,6 +140,10 @@ declare -A colors=(
 	[pink_fg]='\e[38;5;169m'
 	[purple]='\e[38;5;255m\e[48;5;57m'
 	[purple_fg]='\e[38;5;57m'
+	[brown]='\e[38;5;255m\e[48;5;94m'
+	[brown_fg]='\e[38;5;94m'
+	[grey]='\e[38;5;16m\e[48;5;242m'
+	[grey_fg]='\e[38;5;242m'
 )
 
 
