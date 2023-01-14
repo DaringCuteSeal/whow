@@ -137,4 +137,4 @@ sched we "01:00 PM" "03:00 PM" "Continue current project"
 - [x] Work on scheduling support
 - [ ] Sort time on scheduling printing
 
-- [ ] Python rewrite 🌟
+- [ ] Python rewrite 🌟 (is being worked on [here](https://github.com/ezntek/whow)!)
