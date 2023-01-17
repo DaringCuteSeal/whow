@@ -490,21 +490,21 @@ todos_categ(){
 
 
 iftoday_td(){
-	if [[ "$(_date -d "${todos_due[$i]/\^/ }" +"%j%Y")" == "$(_date +"%j%Y")" ]]
+	if [[ "$(_date -d "${todos_due[$i]/\^/ }" +"%-j%-Y")" == "$(_date +"%-j%-Y")" ]]
 	then
 		echo 1
 	fi
 }
 
 iftmrw_td(){
-	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) == 10000 ]]
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%-j%-Y") - $(_date +"%-j%-Y") )) == 10000 ]]
 	then
 		echo 1
 	fi
 }
 
 ifyest_td(){
-	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%j%Y") - $(_date +"%j%Y") )) == -10000 ]]
+	if [[ $(( $(_date -d "${todos_due[$i]/\^/ }" +"%-j%-Y") - $(_date +"%-j%-Y") )) == -10000 ]]
 	then
 		echo 1
 	fi
