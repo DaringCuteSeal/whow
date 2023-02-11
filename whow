@@ -873,6 +873,22 @@ source_events(){
 source_schedule(){
 	[[ -e "$cache_dir/schedule" ]] && source "$cache_dir/schedule"
 }
+
+source_config(){
+	if [[ -r "${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}" ]];then
+			config=${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}
+			source "$config" >/dev/null
+		else
+			warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
+		fi
+}
+def_config(){
+	for i in "${!options[@]}"
+	do
+		eval "$i=\"${options[$i]}\""
+	done
+
+}
 #########################
 
 ## Each operations will be declared here. ##
@@ -889,25 +905,16 @@ show(){
 	events_i=0
 	sched_i=0
 
-	for i in "${!options[@]}"
-	do
-		eval "$i=\"${options[$i]}\""
-	done
+	def_config
 
-	# Check configuration file
-	if [[ -r "${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}" ]];then
-		config=${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}
-		source "$config" >/dev/null
-	else
-		warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
-	fi
-
-	declare -A todos_n
-
+	# Source all needed files
+	source_config
 	source_todos
 	source_events
 	source_schedule
 		
+	declare -A todos_n
+
 	# Autodetect TTY, for Linux TTYs
 	if [[ "$TERM" == "linux" ]]
 	then
@@ -977,19 +984,23 @@ checkdir(){
 		:
 	elif [[ -d "$XDG_CONFIG_HOME" ]]
 	then
-		config="$XDG_CONFIG_HOME/whow/rc"
+		config="$XDG_CONFIG_HOME/whow/"
 	elif [[ -d "$HOME" ]]
 	then
-		config="$HOME/.config/whow/rc"
-		:
-	else
-		err "Could not find a suitable directory for configuration file! Use the -c option to specify one instead." 1
+		config="$HOME/.config/whow/"
 	fi
+
+	if [[ ! -d "$config" ]]
+	then
+		mkdir "$config" || err "Failed to create configuration directory!"
+	fi
+
+	[[ -z "$config" ]] && err "Could not find a suitable directory for configuration file! Use the -c option to specify one instead." 1
+	config="${config}/rc"
 }
 
 edit(){	
 
-	
 	checkdir
 
 	case "$1" in
@@ -1020,6 +1031,7 @@ edit(){
 ############################################
 
 # Now the commands and other options
+def_config
 while [[ $# -gt 0 ]]
 do
 	case "$1" in
@@ -1070,8 +1082,8 @@ do
 			declare -A categories_color=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
 
 			checkdir
-			source "$config"
-			todos_file="${cache_dir:-${options[cache_dir]}}/todos"
+			source_config
+			todos_file="${cache_dir}/todos"
 
 			shift
 			case "$1" in
@@ -1146,7 +1158,7 @@ do
 
 					if [[ "$1" == "all" ]]
 					then
-						printf "" > "${cache_dir:-${options[cache_dir]}}/todos"
+						printf "" > "${cache_dir}/todos"
 						echo "Deleted all to-do's."
 						exit 0
 					fi
@@ -1156,7 +1168,7 @@ do
 					then
 						err "$1 is not a valid todo index" 1
 					else
-						sed -i "${todos_lineno[$(($1-1))]}d" "${cache_dir:-${options[cache_dir]}}/todos"
+						sed -i "${todos_lineno[$(($1-1))]}d" "${cache_dir}/todos"
 						echo "To-do $1 deleted."
 
 					fi
@@ -1231,8 +1243,8 @@ do
 			declare -A categories_color=(["important"]="${colors[red]}" ["important_fg"]="${colors[red_fg]}")
 
 			checkdir
-			source "$config"
-			events_file="${cache_dir:-${options[cache_dir]}}/events"
+			source_config
+			events_file="${cache_dir}/events"
 
 			shift
 			case "$1" in
@@ -1292,7 +1304,7 @@ do
 
 					if [[ "$1" == "all" ]]
 					then
-						printf "" > "${cache_dir:-${options[cache_dir]}}/events"
+						printf "" > "${cache_dir}/events"
 						echo "Deleted all events."
 						exit 0
 					fi
@@ -1302,7 +1314,7 @@ do
 					then
 						err "$1 is not a valid todo index" 1
 					else
-						sed -i "${events_lineno[$(($1-1))]}d" "${cache_dir:-${options[cache_dir]}}/events"
+						sed -i "${events_lineno[$(($1-1))]}d" "${cache_dir}/events"
 						echo "Event $1 deleted."
 
 					fi
