@@ -146,6 +146,81 @@ declare -A colors=(
 	[grey_fg]='\e[38;5;242m'
 )
 
+# Default config
+dump_cfg(){
+	cat << EOF
+# Example Whow Configuration
+# This works like a normal shell script, so quote anything with space, and use backslash to prevent expansion (or use single quotes).
+
+## Options
+
+# Enable icons (could be emojis)
+icons yes
+
+# Directory for the to-do's and events
+cachedir "$HOME/.config/whow/"
+
+# Time format for writing to-do's, schedules, and printing in a pretty format
+# Can be set to 12[h] (AM/PM) or 24[h].
+# Example of writing in 12h format: 01:12 PM
+# And in 24h format: 13:12
+timeformat 12
+
+# Date format for printing (you might want it to be more human-readable)
+# Check the format at date(1) manual page or run \`info date\` if you have texinfo installed.
+# The format below is the default and will print something like "Sun, 20 April 2022".
+dateformat "%a, %b %d %Y"
+
+# Date format for writing, below is the default.
+# Can be mm/dd/yyyy, dd/mm/yyyy, dd/mm, or mm/dd. 
+dateformat_cfg "mm/dd/yyyy"
+
+# Categories
+# This can also be used for some other stuff like priority.
+# Note: A builtin category called "important" will be added by default.
+
+#category "art" "programming" "asap" "fun"
+# You can also assign colors to them (only works with 256 colors/true color capable terminal):
+category "art:blue" "programming:yellow" "asap:red" "fun:purple" "school:pink"
+# Available colors are (d is suffix for dark and l for light):
+# green, blue, yellow, red, orange, brown, dgreen, dblue, lblue, dred, pink, purple, grey
+
+
+## Formatting
+
+# Available sections:
+# date, separator:n, calendar, todos, events, important, custom:n
+
+# Separator 1 looks like this:
+# ———————————————————————
+#
+# 2 looks like this:
+# =======================
+#
+# 3 looks like this:
+# ~~~~~~~~~~~~~~~~~~~~~~~
+#
+# and 0 will just print a new line.
+
+format "separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2" "schedule"
+# For the custom section, define your own in this file (doesn't matter where), or source it from other file
+
+# Here's an example (this will be custom:1):
+#custom 1 '
+#echo "Host: \$(hostname)"
+#echo "Uptime: \$(uptime --pretty)"
+#curl "https://random-link/script.sh" | bash -
+#'
+
+# Another one with only one command:
+#custom 1 afetch
+
+# Also, you can assign a string instead to a custom section key so custom:weather would work too.
+
+
+# vim: ft=sh
+EOF
+}
 
 ## Commands for config file ##
 
@@ -879,7 +954,7 @@ source_config(){
 			config=${config:-${XDG_CONFIG_HOME:-$HOME/.config}/whow/rc}
 			source "$config" >/dev/null
 		else
-			warn "Could not find a configuration file! Run ${style_bold}$prog_name edit rc${style_reset} to write one, or specify a file with the -c option."
+			warn "Could not find a configuration file! Run ${style_bold}$prog_name init${style_reset} to create one, or specify a file with the -c option."
 		fi
 }
 def_config(){
@@ -981,22 +1056,22 @@ show(){
 checkdir(){
 	if [[ -n "$config" ]]
 	then
-		:
+		return
 	elif [[ -d "$XDG_CONFIG_HOME" ]]
 	then
-		config="$XDG_CONFIG_HOME/whow/"
+		config_dir="$XDG_CONFIG_HOME/whow"
 	elif [[ -d "$HOME" ]]
 	then
-		config="$HOME/.config/whow/"
+		config_dir="$HOME/.config/whow"
 	fi
 
-	if [[ ! -d "$config" ]]
+	if [[ ! -d "$config_dir" ]]
 	then
-		mkdir "$config" || err "Failed to create configuration directory!"
+		mkdir "$config_dir" || err "Failed to create configuration directory!"
 	fi
 
-	[[ -z "$config" ]] && err "Could not find a suitable directory for configuration file! Use the -c option to specify one instead." 1
-	config="${config}/rc"
+	[[ -z "$config_dir" ]] && err "Could not find a suitable directory for configuration file! Use the -c option to specify one instead." 1
+	config="${config_dir}/rc"
 }
 
 edit(){	
@@ -1045,6 +1120,18 @@ do
 			shift 2
 			;;
 
+		init)
+			checkdir
+			def_config
+			if [[ -f "$config"  ]]
+			then
+				read -p "Override config file? [y/n] " ans
+				[[ ! "y|Y" =~ "$ans" ]] && exit 0
+			fi
+				
+			dump_cfg > "$config" && info "Dumped new config file to ${style_bold}${config}${style_reset}."
+			exit $?
+			;;
 		show)
 			shift
 			if [[ -z "$1" ]]
