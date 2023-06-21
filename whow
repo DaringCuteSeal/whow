@@ -18,7 +18,7 @@ style_dim='\e[2m'
 err(){
 	[[ "$2" == 1 ]] && string="\e[31;31m[!!] err: ${style_reset}$1" || string="$1"
 	echo -e "$string"
-	exit $2
+	exit "$2"
 }
 
 warn(){
@@ -97,9 +97,9 @@ icon(){
 color(){
 	if [[ -n "$2" ]]
 	then
-		echo "\\e[38;5;$1m\\e[48;5;$2m"
+		printf "\\e[38;5;%sm\\e[48;5;%sm" "$1" "$2"
 	else
-		echo "\\e[38;5;$1m"
+		printf "\\e[38;5;$%sm" "$1"
 	fi
 }
 
@@ -229,7 +229,7 @@ cachedir(){
 	then
 		cache_dir="$1"
 	else
-		conf_error "on option ${style_bold}$FUNCNAME${style_reset}: invalid directory \"$1\" for cache!"
+		conf_error "on option ${style_bold}${FUNCNAME[0]}${style_reset}: invalid directory \"$1\" for cache!"
 	fi
 }
 
@@ -242,7 +242,7 @@ icons(){
 			icons=no
 			;;
 		*)
-			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: invalid option \"$1\""
+			conf_error "on option ${style_bold}${FUNCNAME[0]}${style_reset}: invalid option \"$1\""
 	esac
 }
 
@@ -255,7 +255,7 @@ timeformat(){
 			time_format="%I:%M %p"
 			;;
 		*)
-			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: unknown format \"$1\""
+			conf_error "on option ${style_bold}${FUNCNAME[0]}${style_reset}: unknown format \"$1\""
 			;;
 	esac
 
@@ -266,7 +266,7 @@ dateformat(){
 	then
 		date_format="$1"
 	else
-		conf_error "on option ${style_bold}$FUNCNAME${style_reset}: empty format"
+		conf_error "on option ${style_bold}${FUNCNAME[0]}${style_reset}: empty format"
 	fi
 }
 
@@ -281,7 +281,7 @@ dateformat_cfg(){
 			date_format_cfg[2]="%d/%m/%Y"
 			;;
 		*)
-			conf_error "on option ${style_bold}$FUNCNAME${style_reset}: unknown format \"$1\""
+			conf_error "on option ${style_bold}${FUNCNAME[0]}${style_reset}: unknown format \"$1\""
 			;;
 	esac
 }
@@ -325,7 +325,7 @@ checkcategory(){
 
 category(){
 
-	[[ -n "$@" ]] && for i in "$@"
+	[[ -n "$*" ]] && for i in "$@"
 	do
 		local category="${i%:*}"
 		categories+=("$category")
@@ -355,22 +355,22 @@ format(){
 
 todo(){
 
-	[[ -z "$@" ]] && conf_error "on todo $((${todo_i}+1)) (line ${BASH_LINENO[0]}): empty todo"
+	[[ -z "$*" ]] && conf_error "on todo $((todo_i+1)) (line ${BASH_LINENO[0]}): empty todo"
 	
-	todos_lineno[$todo_i]="${BASH_LINENO[0]}"
-	todos[$todo_i]="$1"
+	todos_lineno[todo_i]="${BASH_LINENO[0]}"
+	todos[todo_i]="$1"
 	shift
 
 	if [[ "$1" == "v" ]]
 	then
-		todos_done[$todo_i]=1
+		todos_done[todo_i]=1
 		shift
 	fi
 
-        if [[ -z "$@" ]]
+        if [[ -z "$*" ]]
 	then
-		todos_category[$todo_i]="(none)"
-		todos_due[$todo_i]="(none)"
+		todos_category[todo_i]="(none)"
+		todos_due[todo_i]="(none)"
 		(( todo_i++ ))
 		return
 	fi
@@ -382,15 +382,15 @@ todo(){
 		then
 			if checkcategory "$category"
 			then
-				todos_category[$todo_i]="$category"
+				todos_category[todo_i]="$category"
 				local temp_categ=1
 			else
-				conf_error "on todo #$(($todo_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
+				conf_error "on todo #$((todo_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
 			fi
 		else
 			case "$1" in
 				v)
-					todos_done[$todo_i]=1
+					todos_done[todo_i]=1
 					;;
 				*)
 
@@ -400,9 +400,9 @@ todo(){
 
 					if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]]
 					then
-						todos_due[$todo_i]="$(convertdate "$1")"
+						todos_due[todo_i]="$(convertdate "$1")"
 					else
-						todos_due[$todo_i]="$1"
+						todos_due[todo_i]="$1"
 					fi
 
 					local temp_due=1
@@ -412,8 +412,8 @@ todo(){
 		shift
 	done
 
-	[[ "$temp_categ" == 1 ]] && [[ "$temp_due" != 1 ]] && todos_due[$todo_i]="(none)"
-	[[ "$temp_categ" != 1 ]] && [[ "$temp_due" == 1 ]] && todos_category[$todo_i]="(none)"
+	[[ "$temp_categ" == 1 ]] && [[ "$temp_due" != 1 ]] && todos_due[todo_i]="(none)"
+	[[ "$temp_categ" != 1 ]] && [[ "$temp_due" == 1 ]] && todos_category[todo_i]="(none)"
 
 	(( todo_i++ ))
 }
@@ -426,23 +426,23 @@ custom(){
 }
 
 event(){
-	[[ $# -lt 2 ]] && conf_error "on event $((${events_i}+1)) (line ${BASH_LINENO[0]}): empty event"
+	[[ $# -lt 2 ]] && conf_error "on event $((events_i+1)) (line ${BASH_LINENO[0]}): empty event"
 	
-	events_lineno[$events_i]="${BASH_LINENO[0]}"
+	events_lineno[events_i]="${BASH_LINENO[0]}"
 	
 	# Read the reason at to-do part of this date assignment
 	if [[ "${date_format_cfg[1]}" == "dd/mm/yyyy" ]]
 	then
-		events_date[$events_i]="$(convertdate "$1")"
+		events_date[events_i]="$(convertdate "$1")"
 	else
-		events_date[$events_i]="$1"
+		events_date[events_i]="$1"
 	fi
 
-	events[$events_i]="$2"
+	events[events_i]="$2"
 
         if [[ -z "$3" ]]
 	then
-		events_category[$events_i]="(none)"
+		events_category[events_i]="(none)"
 		(( events_i++ ))
 		return
 	fi
@@ -451,17 +451,17 @@ event(){
 
 	if checkcategory "$category"
 	then
-		events_category[$events_i]="$category"
+		events_category[events_i]="$category"
 		local temp_categ=1
 	else
-		conf_error "on events #$(($events_i+1)): nonexistent category \"${category}\""
+		conf_error "on events #$((events_i+1)): nonexistent category \"${category}\""
 	fi
 
-	events_i=$(($events_i+1))
+	events_i=$((events_i+1))
 }
 
 sched(){
-	[[ $# -lt 3 ]] && conf_error "On schedule $((${sched_i}+1)) (line ${BASH_LINENO[0]}): incorrect amount of arguments"
+	[[ $# -lt 3 ]] && conf_error "On schedule $((sched_i+1)) (line ${BASH_LINENO[0]}): incorrect amount of arguments"
 
 	case "$1" in
 		# ev → every day
@@ -469,35 +469,35 @@ sched(){
 		# we → weekends
 
 		ev|wd|we)
-			sched_day[${sched_i}]="$1"
+			sched_day[sched_i]="$1"
 			;;
 		sun|mon|tue|wed|thu|fri|sat)
-			sched_day[${sched_i}]="$1"
+			sched_day[sched_i]="$1"
 			;;
 		*)
 			conf_error "Invalid day \"$1\""
 			;;
 	esac
 
-	sched_start[${sched_i}]="$2"
-	sched_end[${sched_i}]="$3"
+	sched_start[sched_i]="$2"
+	sched_end[sched_i]="$3"
 
-	sched[${sched_i}]="$4"
+	sched[sched_i]="$4"
 
 	category="${5#@*}"
 	if [[ "${5:0:1}" == "@" ]]
 	then
 		if checkcategory "$category"
 		then
-			sched_categ[${sched_i}]="$category"
+			sched_categ[sched_i]="$category"
 		else
-			conf_error "on schedule #$(($sched_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
+			conf_error "on schedule #$((sched_i+1)) (line ${BASH_LINENO[0]}): nonexistent category \"${category}\""
 		fi
 	else
-		sched_categ[${sched_i}]='(none)'
+		sched_categ[sched_i]='(none)'
 	fi
 
-	sched_i=$(($sched_i+1))
+	sched_i=$((sched_i+1))
 }
 
 ##############################
@@ -523,9 +523,11 @@ section_separator(){
 
 
 section_date(){
-	local today="$(_date +"$date_format")"
-	local time="$(_date +"$time_format")"
-	echo -e " ${style_dim}Today is${style_reset} ${style_bold}`color 234 111` 📆 $today ${style_reset} `color 233 105` 🕒 ${style_bold}${time} ${style_reset}"
+	local today
+	local time
+	today="$(_date +"$date_format")"
+	time="$(_date +"$time_format")"
+	echo -e " ${style_dim}Today is${style_reset} ${style_bold}$(color 234 111) 📆 $today ${style_reset}$(color 233 10) 🕒 ${style_bold}${time} ${style_reset}"
 
 }
 
@@ -557,7 +559,7 @@ todos_categ(){
 		echo "${categories_color["${todos_category[$i]}_fg"]} ${categories_color[${todos_category[$i]}]} ${todos_category[$i]} ${style_reset}${categories_color[${todos_category[$i]}_fg]}${style_reset}"
 	elif [[ "${todos_category[$i]}" != '(none)' ]]
 	then
-		echo -e " \e[1;7m ${todos_category[i]} ${style_reset}"
+		echo -e " \e[1;7m ${todos_category[$i]} ${style_reset}"
 	else
 		:
 	fi
@@ -622,15 +624,15 @@ due(){
 			
 		if [[ $(ifoverdue) -eq 1 ]]
 		then
-			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset} ${colors[red]} overdue ${style_reset}"
+			echo -e " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset} ${colors[red]} overdue ${style_reset}"
 		else
-			echo " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset}"
+			echo -e " ${style_invert}🕐 due \e[7;1m${due_print} ${style_reset}"
 		fi
 	fi
 }
 
 section_todos(){
-	echo -e "\n `icon ✅`${style_bold}To-Do's${style_reset}\n"
+	echo -e "\n $(icon ✅)${style_bold}To-Do's${style_reset}\n"
 
 	if [[ $todo_i -eq 0 ]]
 	then
@@ -638,37 +640,36 @@ section_todos(){
 		return 0
 	fi
 
-	for (( i=0; i < $todo_i; i++ ))
+	for (( i=0; i < todo_i; i++ ))
 	do
 
 		if [[ "${todos_due[$i]}" == "(none)" ]]
 		then
-			index="#$(($i+1))"
+			index="#$((i+1))"
 		elif [[ $(ifoverdue) -eq 1 ]]
 		then
-			index="${colors[red_fg]}#$(($i+1))${style_reset}"
+			index="${colors[red_fg]}#$((i+1))${style_reset}"
 		else
-			index="#$(($i+1))"
+			index="#$((i+1))"
 
 		fi
 
 		if [[ "${todos_category[$i]}" == "important" ]]
 		then
-			index="${colors[red_fg]}#$(($i+1))${style_reset}"
+			index="${colors[red_fg]}#$((i+1))${style_reset}"
 		fi
 		
 		if [[ "${todos_done[$i]}" == 1 ]]
 		then
-			index="#$(($i+1))"
+			index="#$(($+1))"
 		fi
 	
        #         echo -e "  ${style_bold}#$(($i+1))${style_reset} `categ`\
 #`ifdone "${style_strike}"`$(fold -w 63 <<< "${todos[$i]}" | 's/^/ /g' -)`ifdone " "`${style_reset}`ifdone ' ✔'`"\
 #`due`
-		echo -e "  ${style_bold}${index}${style_reset} `todos_categ`\
- `ifdone "${style_strike}"`${todos[$i]}${style_reset}`ifdone ' ✔'`"\
-`due`
-		due_print_due=0
+		echo -e "  ${style_bold}${index}${style_reset} $(todos_categ)\
+ $(ifdone "${style_strike}")${todos[$i]}${style_reset}$(ifdone ' ✔')"\
+$(due)
 	done
 
 	echo
@@ -712,16 +713,16 @@ events_print(){
 
 	if [[ "${events_category[$i]}" == "(none)" ]]
 	then
-		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${events[$i]}"
+		echo -e "  ${style_bold}#$((i+1))${style_reset}  ${style_invert} $(icon 📅)$date_print ${style_reset} ${events[i]}"
 	elif [[ "${events_category[$i]}" == "important" ]]
 	then
-		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${colors[red]} `icon 📅`$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
+		echo -e "  ${style_bold}#$((i+1))${style_reset}  ${colors[red]} $(icon 📅)$date_print ${style_reset} ${colors[red_fg]}${colors[red]} ❗important ${style_reset} ${events[$i]}"
 	elif [[ "${events_category[$i]}" != '(none)' ]] && [[ "${categories_color["${events_category[$i]}"]}" != "${style_reset}" ]]
 	then
-		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} `icon 📅`$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
+		echo -e "  ${style_bold}#$((i+1))${style_reset}  ${categories_color["${events_category[$i]}"]} $(icon 📅)$date_print ${style_reset} ${categories_color[${events_category[$i]}_fg]}${categories_color["${events_category[$i]}"]} ${events_category[$i]} ${style_reset} ${events[$i]}"
 	elif [[ "${events_category[$i]}" != '(none)' ]]
 	then
-		echo -e "  ${style_bold}#$(($i+1))${style_reset}  ${style_invert} `icon 📅`$date_print ${style_reset} ${style_invert} ${style_bold}${events_category[$i]} ${style_reset} ${events[$i]}"
+		echo -e "  ${style_bold}#$((i+1))${style_reset}  ${style_invert} $(icon 📅)$date_print ${style_reset} ${style_invert} ${style_bold}${events_category[$i]} ${style_reset} ${events[$i]}"
 	fi
 }
 
@@ -743,7 +744,7 @@ events_today(){
 
 section_events(){
 
-	echo -e "\n `icon 🗓️`${style_bold}Events${style_reset}\n"
+	echo -e "\n $(icon 🗓️)${style_bold}Events${style_reset}\n"
 
 	if [[ $events_i -eq 0 ]]
 	then
@@ -752,11 +753,11 @@ section_events(){
 	fi
 
 	
-	for (( i=0; i < $events_i; i++ ))
+	for (( i=0; i < events_i; i++ ))
 	do
 		if [[ $(iftoday_ev) -eq 1 ]]
 		then
-			events_today+=($i)
+			events_today+=($$i)
 		elif [[ "$(_date -d "${events_date[$i]}" +"%s")" -lt "$(_date +"%s")" ]]
 		then
 			events_past+=($i)
@@ -807,7 +808,7 @@ section_events(){
 		do
 			i=${events_past[$j]}
 			events_print
-			[[ -z ${events_past[$(($j+1))]} ]] && break
+			[[ -z ${events_past[$((j+1))]} ]] && break
 		done
 		echo
 	fi
@@ -815,7 +816,7 @@ section_events(){
 }
 
 section_important(){
-	echo -e "\n `icon ✅`${style_bold}Important To-Do's${style_reset}\n"
+	echo -e "\n $(icon ✅)${style_bold}Important To-Do's${style_reset}\n"
 
 	for (( i=0; i < ${#todos_category[@]}; i++ ))
 	do
@@ -823,19 +824,19 @@ section_important(){
 		then
 			if [[ $(ifoverdue) -eq 1 ]] || [[ $(iftoday_td) -eq 1 ]]
 			then
-				echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}`due`${style_reset}"
+				echo -e "  ${style_bold}${colors[red_fg]}#$((i+1))\e[21m  ${todos[$i]}$(due)${style_reset}"
 			else
-				echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}"
+				echo -e "  ${style_bold}${colors[red_fg]}#$((i+1))\e[21m  ${todos[$i]}"
 			fi
 			important_exists=1
 		elif [[ "$(ifoverdue)" -eq 1 && ${todos_done[$i]} != 1 ]]
 		then
-			echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}`due`${style_reset}"
+			echo -e "  ${style_bold}${colors[red_fg]}#$(($i+1))\e[21m  ${todos[$i]}$(due)${style_reset}"
 			important_exists=1
 		fi
 
 	done
-	printf "${style_reset}"
+	echo -e "${style_reset}"
 
 	[[ $important_exists != 1 ]] && echo -e " No important to-do's.\n" || echo
 }
@@ -854,7 +855,7 @@ sched_categ(){
 		echo "${categories_color["${sched_categ[$i]}_fg"]} ${categories_color[${sched_categ[$i]}]} ${sched_categ[$i]} ${style_reset}${categories_color[${sched_categ[$i]}_fg]}${style_reset}"
 	elif [[ "${sched_categ[$i]}" != '(none)' ]]
 	then
-		echo "\e[1;7m ${sched_categ[$i]} ${style_reset}"
+		echo -e "\e[1;7m ${sched_categ[$i]} ${style_reset}"
 	else
 		:
 	fi
@@ -877,9 +878,9 @@ sched_over(){
 sched_time(){
 	if [[ "${sched_end[$i]}" != "%" ]]
 	then
-		echo -en "\e[1;7m `_date -d "${sched_start[$i]}" "+${time_format}"` - `_date -d "${sched_end[$i]}" "+${time_format}"` "
+		echo -en "\e[1;7m $(_date -d "${sched_start[$i]}" "+${time_format}") - $(_date -d "${sched_end[$i]}" "+${time_format}") "
 	else
-		echo -en "\e[1;7m `_date -d "${sched_start[$i]}" "+${time_format}"` "
+		echo -en "\e[1;7m $(_date -d "${sched_start[$i]}" "+${time_format}") "
 	fi
 }
 
@@ -893,32 +894,33 @@ sched_ongoing(){
 
 
 sched_print(){
-	echo -e "  ${style_bold}#$(($i+1))${style_reset} `sched_over``sched_time`${style_reset}`sched_categ` `sched_over`${sched[$i]}`sched_ongoing`${style_reset}"
+	echo -e "  ${style_bold}#$((i+1))${style_reset} $(sched_over)$(sched_time)${style_reset}$(sched_categ) $(sched_over)${sched[$i]}$(sched_ongoing)${style_reset}"
 }
 
 section_schedule(){
-	local today="$(_date '+%a')"
-	local today="${today@L}"
+	local today
+	today="$(_date '+%a')"
+	today="${today@L}"
 
-	echo -e "\n `icon ⌚`${style_bold}Schedule${style_reset}\n"
-	echo -e "   ${style_bold}`date "+%A"` \e[7m ${style_bold}`date "+${time_format}"` ${style_reset}\n"
+	echo -e "\n $(icon ⌚)${style_bold}Schedule${style_reset}\n"
+	echo -e "   ${style_bold}$(date "+%A") \e[7m ${style_bold}$(date "+${time_format}") ${style_reset}\n"
 
-	if [[ -z "${sched[@]}" ]]
+	if [[ -z "${sched[*]}" ]]
 	then
 		echo -e " No schedule configured.\n"
 		return 0
 	fi
-	for (( i=0; i < $sched_i; i++ ))
+	for (( i=0; i < sched_i; i++ ))
 	do
 		case "${sched_day[$i]}" in
 			ev)
 				sched_print
 				;;
 			we)
-		 		[[ "sun|sat" =~ "$today" ]] && sched_print
+		 		[[ "sun|sat" =~ $today ]] && sched_print
 				;;
 			wd)
-				[[ "mon|tue|wed|thu|fri" =~ "$today" ]] && sched_print
+				[[ "mon|tue|wed|thu|fri" =~ $today ]] && sched_print
 				;;
 			mon|tue|wed|thu|fri|sat|sun)
 				[[ "${sched_day[$i]}" == "$today" ]] && sched_print
@@ -988,14 +990,14 @@ show(){
 	source_events
 	source_schedule
 		
-	declare -A todos_n
+	#declare -A todos_n
 
 	# Autodetect TTY, for Linux TTYs
 	if [[ "$TERM" == "linux" ]]
 	then
 		icons=no
 	fi
-	[[ -z "$sections" ]] && sections=("separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2" "schedule" "separator:2")
+	[[ -z "${sections[*]}" ]] && sections=("separator:1" "date" "separator:1" "calendar" "separator:2" "important" "todos" "separator:2" "events" "separator:2" "schedule" "separator:2")
 
 	case "$1" in
 		all)
@@ -1028,10 +1030,10 @@ show(){
 			section_important
 
 			echo -e "  ----------\n"
-			echo -e " `icon 🗓️`${style_bold}Today's Events${style_reset}\n"
+			echo -e " $(icon 🗓️)${style_bold}Today's Events${style_reset}\n"
 
 
-			for (( i=0; i < $events_i; i++ ))
+			for (( i=0; i < events_i; i++ ))
 			do
 				if [[ $(iftoday_ev) -eq 1 ]]
 				then
@@ -1125,7 +1127,7 @@ do
 			def_config
 			if [[ -f "$config"  ]]
 			then
-				read -p "Override config file? [y/n] " ans
+				read -rp "Override config file? [y/n] " ans
 				[[ ! "y|Y" =~ "$ans" ]] && exit 0
 			fi
 				
@@ -1248,7 +1250,19 @@ do
 						printf "" > "${cache_dir}/todos"
 						echo "Deleted all to-do's."
 						exit 0
+
+					elif [[ "$1" == "done" ]]
+					then
+						echo "${todos_lineno[$i]}"
+						if [[ "${todos_done[$i]}" == 1 ]]
+						then
+							sed -i "${todos_lineno[$((i-1))]}d" "${cache_dir}/todos"
+						fi
+						echo "Deleted all done to-do's."
+						exit 0
 					fi
+
+
 
 					source_todos
 					if [[ -z "${todos[$(($1-1))]}" ]] || [[ -z "${1//[a-z]}" ]]
@@ -1273,14 +1287,14 @@ do
 
 					index="$1"
 
-					if [[ -z "${todos[$(($index-1))]}" || "$index" -lt 1 ]]
+					if [[ -z "${todos[$((index-1))]}" || "$index" -lt 1 ]]
 					then
 						err "$index is not a valid todo index" 1
 					fi
 
 					shift
 
-					index=$(($index-1))
+					index=$((index-1))
 
 					if [[ "${todos_done[$index]}" != 1 ]]
 					then
@@ -1296,7 +1310,7 @@ do
 						fi
 						eval "sed -i ${todos_lineno[$index]}c'todo \"${todos[$index]}\" $write v' \"$todos_file\""
 
-						echo "To-do $(($index+1)) marked done."
+						echo "To-do $((index+1)) marked done."
 					else
 
 						if [[ "${todos_due[$index]}" != '(none)' ]] 
@@ -1310,7 +1324,7 @@ do
 						fi
 						eval "sed -i ${todos_lineno[$index]}c'todo \"${todos[$index]}\" $write' \"$todos_file\""
 
-						echo "To-do $(($index+1)) marked undone."
+						echo "To-do $((index+1)) marked undone."
 
 
 					fi
