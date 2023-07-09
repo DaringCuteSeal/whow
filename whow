@@ -661,7 +661,7 @@ section_todos(){
 		
 		if [[ "${todos_done[$i]}" == 1 ]]
 		then
-			index="#$(($+1))"
+			index="#$((i+1))"
 		fi
 	
        #         echo -e "  ${style_bold}#$(($i+1))${style_reset} `categ`\
