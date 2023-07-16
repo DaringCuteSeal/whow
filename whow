@@ -103,6 +103,21 @@ color(){
 	fi
 }
 
+issignedint(){
+
+	if [[ -z '$1' ]]
+	then
+		return 1
+	elif [[ -n "$(tr -d '[0-9]' <<< "$1")" ]]
+	then
+		return 1
+	else
+		return 0
+	fi
+
+
+}
+
 # Default values; subscript for the variable and the value for default value
 declare -A options=(
 	[time_format]="%T"
@@ -325,7 +340,7 @@ checkcategory(){
 
 category(){
 
-	[[ -n "$*" ]] && for i in "$@"
+	for i
 	do
 		local category="${i%:*}"
 		categories+=("$category")
@@ -347,7 +362,7 @@ category(){
 }
 
 format(){
-	for i in "$@"
+	for i
 	do
 		sections+=("$i")
 	done
@@ -1195,7 +1210,7 @@ do
 					name="$1"
 					shift
 
-					for i in "$@"
+					for i
 					do
 						if [[ "${i:0:1}" == "@" ]]
 						then
@@ -1245,30 +1260,34 @@ do
 						err "No index supplied" 1
 					fi
 
+					source_todos
 					if [[ "$1" == "all" ]]
 					then
 						printf "" > "${cache_dir}/todos"
 						echo "Deleted all to-do's."
 						exit 0
 
-					elif [[ "$1" == "done" ]]
+					elif [[ "$1" == "UNIMPLEMENTED" ]]
 					then
-						echo "${todos_lineno[$i]}"
-						if [[ "${todos_done[$i]}" == 1 ]]
-						then
-							sed -i "${todos_lineno[$((i-1))]}d" "${cache_dir}/todos"
-						fi
-						echo "Deleted all done to-do's."
+						echo true
+						echo "${todos_lineno[@]}"
+						for i in ${todos_done[@]}
+						do
+							if [[ "$i" == 1 ]]
+							then
+								sed -i "${todos_lineno[$((i-1))]}d" "${cache_dir}/todos"
+							fi
+						done
+							echo "Deleted all done to-do's."
 						exit 0
 					fi
 
 
-
-					source_todos
-					if [[ -z "${todos[$(($1-1))]}" ]] || [[ -z "${1//[a-z]}" ]]
+					if ! issignedint "$1" || [[ -z "${todos[$(($1-1))]}" ]]
 					then
 						err "$1 is not a valid todo index" 1
 					else
+						echo ${todos_lineno[$(($1-1))]}
 						sed -i "${todos_lineno[$(($1-1))]}d" "${cache_dir}/todos"
 						echo "To-do $1 deleted."
 
